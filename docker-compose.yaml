@@ -1,0 +1,21 @@
+﻿services:
+  appdaemon:
+    image: acockburn/appdaemon:latest
+    container_name: appdaemon
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    volumes:
+      - ./apps:/conf/apps
+      - ./appdaemon.yaml:/conf/appdaemon.yaml
+
+    ports:
+      - "5050:5050"
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

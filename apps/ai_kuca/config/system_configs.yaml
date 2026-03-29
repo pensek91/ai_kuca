@@ -1,0 +1,280 @@
+# AI_KUCA - system konfiguracija
+# Komentari su opis polja na jednostavnom jeziku.
+
+# Globalna razina logiranja (DEBUG/INFO/WARNING/ERROR/CRITICAL)
+logging_level: WARNING
+
+# Postavke centralnog log senzora
+ai_kuca_log:
+  # HA entitet u koji se zapisuje centralni log
+  sensor_entity: sensor.ai_kuca_log
+  # Koliko sekundi povijesti log poruka cuvamo
+  history_seconds: 120
+  # Maksimalan broj log zapisa u povijesti
+  max_items: 50
+
+# Postavke pojedinacnog log senzora
+ai_kuca_log_sensors:
+  #Log Grijanja
+  heating_main: sensor.ai_kuca_log_grijanje
+  #Log Overheat
+  overheat: sensor.ai_kuca_log_overheat
+  #Log Mis ventila
+  valve_control: sensor.ai_kuca_log_ventil
+  #Log Boost
+  boost: sensor.ai_kuca_log_boost
+  #Log Pumpe
+  pump: sensor.ai_kuca_log_pumpa
+  #Log predikcije temperature
+  predictive_temperature: sensor.ai_kuca_log_predikcija_temperature
+  #Log predikcije vlaznosti
+  predictive_humidity: sensor.ai_kuca_log_predikcija_vlage
+  #Log Ventilacije
+  ventilation: sensor.ai_kuca_log_ventilacija
+  #Log konfiguracije
+  status: sensor.ai_kuca_log_status
+
+# Glavne postavke grijanja
+heating_main:
+  # Glavni prekidac grijanja (ON/OFF)
+  active_switch: input_boolean.ai_heating_active
+  # ECO prekidac grijanja
+  eco_switch: input_boolean.ai_heating_eco
+  # Prekidac koji oznacava overheat stanje
+  overheat_switch: input_boolean.overheat_active
+  # Senzor polazne temperature (krug 1)
+  flow_sensor: sensor.cm_pelet_set_circuit_1_flow_measured_temperature
+  # Senzor temperature kotla
+  boiler_sensor: sensor.cm_pelet_set_boiler_temperature
+  # Primarni vanjski senzor temperature (#1)
+  outdoor_sensor: sensor.cm_pelet_set_outdoor_temperature
+  # Lista vanjskih senzora za prosjek/fallback (#1, #2, ...)
+  outdoor_temp_sensors:
+  - sensor.cm_pelet_set_outdoor_temperature
+  - sensor.temperatura_vani
+  # Maksimalna dozvoljena ciljna temperatura sobe
+  max_room_temp: 35.0
+  # Minimalna dozvoljena ciljna temperatura sobe
+  min_room_temp: 8.0
+  # Koliko stupnjeva ECO mod smanjuje ciljnu temperaturu
+  eco_delta: 2.0
+  # Lista prekidaca koji automatski sinkroniziraju ECO (npr. laku_noc)
+  eco_sync_source_switches:
+  - input_boolean.laku_noc
+  # Nacin sinkronizacije ECO iz izvora: any_on ili all_on
+  eco_sync_mode: any_on
+
+# Overheat zastita
+overheat:
+  # Prekidac overheat stanja
+  overheat_switch: input_boolean.overheat_active
+  # Prekidac pauze ventila
+  valve_pause: input_boolean.mis_ventil_pauza
+  # Relej za otvaranje ventila
+  valve_open: switch.otvaranje_mis_ventila
+  # Lista kandidata za pumpu (fallback)
+  pump_candidates:
+  - switch.pumpa_grijanja
+  # Senzor temperature kotla
+  boiler_sensor: sensor.cm_pelet_set_boiler_temperature
+  # Senzor vanjske temperature
+  outdoor_sensor: sensor.cm_pelet_set_outdoor_temperature
+  # Interval glavne petlje overheat logike (sek)
+  main_loop_interval: 30
+  # Prag ukljucenja overheat faze 1
+  stage1_on: 81.0
+  # Prag iskljucenja overheat faze 1
+  stage1_off: 79.0
+  # Prag ukljucenja overheat faze 2
+  stage2_on: 89.0
+  # Prag iskljucenja overheat faze 2
+  stage2_off: 87.0
+
+# Kontrola ventila
+valve_control:
+  # Senzor polaza (krug 1)
+  flow_sensor: sensor.cm_pelet_set_circuit_1_flow_measured_temperature
+  # Senzor polaza (krug 2)
+  flow_sensor_2: sensor.cm_pelet_set_circuit_2_flow_measured_temperature
+  # Senzor ciljane temperature polaza
+  target_sensor: sensor.ai_recommended_flow_temperature
+  # Relej otvaranja ventila
+  valve_open: switch.otvaranje_mis_ventila
+  # Relej zatvaranja ventila
+  valve_close: switch.zatvaranje_mis_ventila
+  # Prekidac pumpe grijanja
+  pump_switch: switch.pumpa_grijanja
+  # Prekidac pauze ventila
+  valve_pause: input_boolean.mis_ventil_pauza
+  # Senzor temperature kotla
+  boiler_sensor: sensor.cm_pelet_set_boiler_temperature
+  # Senzor vanjske temperature
+  outdoor_sensor: sensor.cm_pelet_set_outdoor_temperature
+  # Odgoda prije stvarnog pomaka ventila (sek)
+  start_delay: 5.0
+  # Mrtva zona regulacije (bez reakcije)
+  deadband: 0.5
+  # Minimalno trajanje impulsa ventila (sek)
+  min_base_pulse: 3.0
+  # Maksimalno trajanje impulsa ventila (sek)
+  max_base_pulse: 15.0
+  # Maksimalna greska koja ulazi u izracun impulsa
+  max_error: 10.0
+  # Odgoda paljenja pumpe prije regulacije ventila (sek)
+  pump_start_delay: 25
+  # Odgoda nakon gasenja pumpe prije kalibracije (sek)
+  pump_off_delay: 30
+  # Pauza nakon impulsa ventila (sek)
+  cooldown_after_pulse: 15
+
+# Postavke pumpe
+pump:
+  # Glavni prekidac pumpe
+  pump_switch: switch.pumpa_grijanja
+  # Overheat prekidac (prioritet sigurnosti)
+  overheat_switch: input_boolean.overheat_active
+  # Lista kandidata prekidaca pumpe (fallback)
+  pump_candidates:
+  - switch.pumpa_grijanja
+  - switch.pump
+  # Minimalno vrijeme rada pumpe (sek)
+  min_on_seconds: 120
+  # Minimalno vrijeme mirovanja pumpe (sek)
+  min_off_seconds: 120
+  # Interval provjere stanja pumpe (sek)
+  main_loop_interval: 15
+
+# Boost postavke
+boost:
+  # Senzor preporucene ciljne temperature polaza
+  flow_target: sensor.ai_recommended_flow_temperature
+  # Input broj za zadavanje ciljne temperature polaza
+  flow_target_input: input_number.ai_recommended_flow_temperature
+  # Input select za odabir sobe/grupe boosta
+  boost_select: input_select.ai_kuca_boost_select
+  # Input select za odabir trajanja boosta
+  duration_select: input_select.ai_kuca_duration_select
+  # Mapa opcija trajanja boosta u sekundama
+  duration_options:
+    5 minuta: 300
+    15 minuta: 900
+    30 minuta: 1800
+    60 minuta: 3600
+    120 minuta: 7200
+  # Preddefinirane grupe soba za boost
+  room_groups:
+    sve: []
+    osnovni:
+    - dnevna
+    - kupaona
+    - spavaca
+    - mali
+    pomocni:
+    - tia
+    - spajz
+
+# Predikcija temperature
+predictive:
+  # Lista vanjskih temperaturnih senzora
+  outdoor_temp_sensors:
+  - sensor.cm_pelet_set_outdoor_temperature
+  - sensor.temperatura_vani
+  # Weather entitet za prognozu temperature
+  forecast_entity: weather.forecast_dom
+  # Prekidac pumpe (koristi se u predikciji)
+  pump_switch: switch.pumpa_grijanja
+  # Kratki prozor povijesti (minute)
+  window_short_minutes: 15
+  # Dugi prozor povijesti (minute)
+  window_long_minutes: 60
+  # Minimalno tocaka za kratki trend
+  min_points_short: 5
+  # Minimalno tocaka za dugi trend
+  min_points_long: 10
+  # Default koeficijent toplinskog gubitka
+  loss_coeff_default: 5.0e-05
+  # Multiplikator gubitka kad je prozor otvoren
+  window_loss_multiplier: 3.0
+  # Tezina kratkog trenda
+  weight_short: 0.3
+  # Tezina dugog trenda
+  weight_long: 0.7
+  # Maksimalna korekcija preporucenog targeta (C)
+  recommended_target_max_adjust: 2.0
+  # Automatski primijeni preporuceni target na climate (true/false)
+  auto_apply_targets: true
+  # Mrtva zona promjene targeta (C) za auto-apply
+  auto_apply_deadband: 0.2
+  # Maksimalna promjena targeta po ciklusu (C)
+  auto_apply_max_step_per_cycle: 0.5
+  # Ako je overheat aktivan, preskoci auto-apply (true/false)
+  auto_apply_skip_when_overheat: true
+  # --- Pametni boost parametri ---
+  smart_boost_enabled: true         # ukljuci/iskljuci pametni boost
+  smart_boost_delta: 2.0            # koliko ispod targeta mora pasti da se boost aktivira (°C)
+  smart_boost_max: 25.0             # maksimalni automatski boost target (°C)
+  smart_boost_deadband: 0.5         # kad se približi ručnom targetu, vraća ga (°C)
+
+# Predikcija vlage
+predictive_humidity:
+  # Interval racunanja predikcije vlage (sek)
+  interval_sec: 60
+  # Duljina povijesti za predikciju vlage (minute)
+  history_window_minutes: 120
+  # Minimalan broj tocki za racun predikcije vlage
+  min_points: 5
+  # Prag osjetljivosti za oznaku trenda vlage
+  trend_epsilon: 0.2
+
+# Ventilacija
+ventilation:
+  # Senzor vanjske vlage
+  outdoor_humidity_sensor: sensor.vlaznost_vani
+  # Weather entitet za fallback prognozu vlage
+  forecast_entity: weather.forecast_dom
+  # Interval provjere ventilacije (sek)
+  interval_sec: 60
+  # Minimalan broj uzoraka prije baseline logike
+  min_samples: 30
+  # Prozor baseline vlage (minute)
+  baseline_window_minutes: 120
+  # Koliko iznad baseline vlage ukljucujemo ventilaciju
+  delta_on: 8.0
+  # Koliko iznad baseline vlage gasimo ventilaciju
+  delta_off: 4.0
+  # Apsolutni prag vlage za ukljucivanje ventilacije (%)
+  abs_on: 70.0
+  # Apsolutni prag vlage za iskljucivanje ventilacije (%)
+  abs_off: 60.0
+  # Minimalno vrijeme rada ventilacije (sek)
+  min_on_sec: 300
+  # Minimalna pauza izmedu dva paljenja (sek)
+  min_off_sec: 180
+  # Maksimalna dozvoljena vanjska vlaga za ventilaciju (%)
+  outdoor_humidity_max: 80.0
+  # Ako nema vanjske vlage, dopusti ventilaciju (true/false)
+  allow_if_outdoor_unknown: true
+  # Ako je prozor otvoren, pauziraj ventilaciju (true/false)
+  window_pause: true
+  # Lista globalnih prekidaca koji pauziraju ventilaciju
+  pause_switches:
+  - input_boolean.laku_noc
+  - input_boolean.ventilacija_pauzirana
+
+# Status checker
+ai_kuca_status:
+  # Koliko cekati prije status provjere nakon pokretanja (sek)
+  check_delay_sec: 8
+  # Popis appova koji trebaju biti dostupni
+  app_names:
+  - ai_config_validator
+  - ai_heating_main
+  - ai_overheat
+  - valve_control
+  - ai_boost
+  - ai_pump
+  - predictive_sensors
+  - predictive_humidity
+  - ai_ventilation_main
+  - ai_kuca_status
+

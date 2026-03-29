@@ -1,0 +1,500 @@
+# AI Kuća - Helper entiteti za konfigurator i napredno upravljanje
+# Ova datoteka je namijenjena za docker/appdaemon/apps/ai_kuca/config/HA_helpers.yaml
+
+input_boolean:
+  ai_heating_active:
+    name: AI Heating Master
+    initial: on
+  ai_heating_eco:
+    name: Eco Mode
+    initial: off
+  ai_kuca_reload_config:
+    name: "AI Kuća Reload Config"
+    icon: mdi:reload
+  ai_kuca_generate_config:
+    name: "AI Kuća Generate System Config"
+    icon: mdi:cog-refresh
+  ai_kuca_room_builder_generate:
+    name: "AI Kuća Generate Room Config"
+    icon: mdi:home-plus
+  ai_kuca_room_builder_delete:
+    name: "AI Kuća Delete Room Config"
+    icon: mdi:trash-can
+
+input_text:
+  ai_kuca_system_config:
+    name: "AI Kuća System Config"
+    mode: text
+    max: 255
+  ai_kuca_room_config:
+    name: "AI Kuća Room Config"
+    mode: text
+    max: 255
+  ai_kuca_room_builder_name:
+    name: "AI Kuća Room Builder Name (Nama sobe)"
+    mode: text
+    max: 255
+  ai_kuca_room_builder_target:
+    name: "AI Kuća Room Target Temperature (Ciljna temperatura °C)"
+    mode: text
+    max: 10
+    initial: "21.0"
+  ai_kuca_room_builder_windows:
+    name: "AI Kuća Room Window Sensors (Senzori vrata/prozora - comma separated)"
+    mode: text
+    max: 255
+  ai_kuca_outdoor_temp_sensors:
+    name: "AI Kuća Outdoor Temperature Sensors (Vanjski senzori temperature - comma separated)"
+    mode: text
+    max: 255
+  ai_kuca_climate_entities:
+    name: "AI Kuća Climate Entities (Popis climate entiteta - comma separated)"
+    mode: text
+    max: 255
+
+input_select:
+  ai_kuca_config_mode:
+    name: "AI Kuća Config Mode"
+    options:
+      - "-- Odaberi --"
+      - "System Config"
+      - "Room Config"
+    initial: "-- Odaberi --"
+  ai_kuca_room_select:
+    name: "AI Kuća Room Select"
+    options:
+      - "NONE"
+    initial: "NONE"
+  ai_kuca_heating_flow_sensor:
+    name: "AI Kuća Flow Sensor (Senzor polaza)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_heating_boiler_sensor:
+    name: "AI Kuća Boiler Sensor (Senzor kotla)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_heating_outdoor_sensor:
+    name: "AI Kuća Outdoor Sensor (Vanjski senzor)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_heating_active_switch:
+    name: "AI Kuća Active Switch (AI grijanje ON/OFF)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_heating_eco_switch:
+    name: "AI Kuća ECO Switch (ECO način)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_heating_overheat_switch:
+    name: "AI Kuća Overheat Switch (Pregrijavanje)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_pump_switch:
+    name: "AI Kuća Pump Switch (Pumpa)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_valve_pause:
+    name: "AI Kuća Valve Pause (Pauza za ventil)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_valve_open:
+    name: "AI Kuća Valve Open (Otvaranje ventila)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_valve_close:
+    name: "AI Kuća Valve Close (Zatvaranje ventila)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_flow_sensor_2:
+    name: "AI Kuća Flow Sensor 2 (Senzor polaza kruga 2)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_target_sensor:
+    name: "AI Kuća Target Sensor (Preporučena temperatura polaza)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_room_builder_climate:
+    name: "AI Kuća Room Climate (Termostat/Climate)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_room_builder_temp_sensor:
+    name: "AI Kuća Room Temp Sensor (Senzor temperature sobe)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_room_builder_humidity_sensor:
+    name: "AI Kuća Room Humidity Sensor (Senzor vlage - opcionalno)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  ai_kuca_room_builder_fan:
+    name: "AI Kuća Room Fan (Ventilator - opcionalno)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+  boost_soba:
+    name: Boost Soba
+    options:
+      - "NONE"
+      - "Spavaca"
+      - "Kupaona"
+      - "Dnevna"
+      - "Mali"
+      - "Tia"
+      - "Spajz"
+      - "Spavaca+Kupaona"
+      - "Spavaca+Dnevna"
+      - "Kupaona+Dnevna"
+      - "Osnovni"
+      - "Pomocni"
+      - "SVE"
+    initial: "NONE"
+  turbo_boost_duration:
+    name: Trajanje boosta
+    options:
+      - "5 minuta"
+      - "15 minuta"
+      - "30 minuta"
+      - "60 minuta"
+      - "120 minuta"
+    initial: "30 minuta"
+
+  ai_kuca_boost_select:
+    name: "AI Kuća Boost Select (centralizirani boost)"
+    options:
+      - "NONE"
+      - "<izaberi>"
+    initial: "NONE"
+  ai_kuca_duration_select:
+    name: "AI Kuća Duration Select (trajanje boosta)"
+    options:
+      - "NONE"
+      - "5 minuta"
+      - "15 minuta"
+      - "30 minuta"
+      - "60 minuta"
+      - "120 minuta"
+    initial: "NONE"
+
+input_number:
+  ai_kuca_param_max_room_temp:
+    name: "🌡️ MAX temperatura sobe (°C)"
+    min: 15
+    max: 40
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 35.0
+  ai_kuca_param_min_room_temp:
+    name: "🌡️ MIN temperatura sobe (°C)"
+    min: 5
+    max: 20
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 8.0
+  ai_kuca_param_eco_delta:
+    name: "🍃 ECO pomak (°C)"
+    min: 0.5
+    max: 5
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 2.0
+  ai_kuca_param_overheat_loop_interval:
+    name: "⚠️ Overheat loop interval (sek)"
+    min: 5
+    max: 120
+    step: 1
+    unit_of_measurement: "s"
+    initial: 30
+  ai_kuca_param_stage1_on:
+    name: "⚠️ Stage 1 ON prag (°C)"
+    min: 60
+    max: 95
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 81.0
+  ai_kuca_param_stage1_off:
+    name: "⚠️ Stage 1 OFF prag (°C)"
+    min: 60
+    max: 95
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 79.0
+  ai_kuca_param_stage2_on:
+    name: "⚠️ Stage 2 ON prag (°C)"
+    min: 65
+    max: 95
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 89.0
+  ai_kuca_param_stage2_off:
+    name: "⚠️ Stage 2 OFF prag (°C)"
+    min: 65
+    max: 95
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 87.0
+  ai_kuca_param_valve_start_delay:
+    name: "🚰 Delay impulsa ventila (sek)"
+    min: 0.1
+    max: 30
+    step: 0.1
+    unit_of_measurement: "s"
+    initial: 5.0
+  ai_kuca_param_valve_deadband:
+    name: "🚰 Deadband zona ventila (°C)"
+    min: 0.1
+    max: 2
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 0.5
+  ai_kuca_param_valve_min_pulse:
+    name: "🚰 MIN impuls ventila (sek)"
+    min: 1
+    max: 10
+    step: 0.1
+    unit_of_measurement: "s"
+    initial: 3.0
+  ai_kuca_param_valve_max_pulse:
+    name: "🚰 MAX impuls ventila (sek)"
+    min: 5
+    max: 60
+    step: 0.1
+    unit_of_measurement: "s"
+    initial: 15.0
+  ai_kuca_param_valve_max_error:
+    name: "🚰 MAX greška ventila (°C)"
+    min: 2
+    max: 20
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 10.0
+  ai_kuca_param_pump_start_delay:
+    name: "💧 Delay pokretanja pumpe (sek)"
+    min: 5
+    max: 120
+    step: 1
+    unit_of_measurement: "s"
+    initial: 25
+  ai_kuca_param_pump_off_delay:
+    name: "💧 Delay gašenja pumpe (sek)"
+    min: 5
+    max: 120
+    step: 1
+    unit_of_measurement: "s"
+    initial: 30
+  ai_kuca_param_pump_cooldown:
+    name: "💧 Cooldown nakon impulsa (sek)"
+    min: 5
+    max: 60
+    step: 1
+    unit_of_measurement: "s"
+    initial: 15
+  ai_kuca_param_pump_min_on:
+    name: "💧 Pumpa MIN vrijeme (sek)"
+    min: 30
+    max: 600
+    step: 10
+    unit_of_measurement: "s"
+    initial: 120
+  ai_kuca_param_pump_min_off:
+    name: "💧 Pumpa MIN pauza (sek)"
+    min: 30
+    max: 600
+    step: 10
+    unit_of_measurement: "s"
+    initial: 120
+  ai_kuca_param_pump_loop_interval:
+    name: "💧 Pumpa loop interval (sek)"
+    min: 5
+    max: 60
+    step: 1
+    unit_of_measurement: "s"
+    initial: 15
+  ai_kuca_param_pred_window_short:
+    name: "🔮 Predikcija - kratki prozor (min)"
+    min: 5
+    max: 60
+    step: 1
+    unit_of_measurement: "min"
+    initial: 15
+  ai_kuca_param_pred_window_long:
+    name: "🔮 Predikcija - dugi prozor (min)"
+    min: 30
+    max: 240
+    step: 10
+    unit_of_measurement: "min"
+    initial: 60
+  ai_kuca_param_pred_min_points_short:
+    name: "🔮 Predikcija - MIN točki (kratko)"
+    min: 2
+    max: 20
+    step: 1
+    initial: 5
+  ai_kuca_param_pred_min_points_long:
+    name: "🔮 Predikcija - MIN točki (dugo)"
+    min: 5
+    max: 50
+    step: 1
+    initial: 10
+  ai_kuca_param_pred_loss_coeff:
+    name: "🔮 Predikcija - koeficijent gubitka"
+    min: 0.00001
+    max: 0.0001
+    step: 0.000001
+    initial: 0.00005
+  ai_kuca_param_pred_window_mult:
+    name: "🔮 Predikcija - multiplikator prozora"
+    min: 1
+    max: 10
+    step: 0.1
+    initial: 3.0
+  ai_kuca_param_pred_weight_short:
+    name: "🔮 Predikcija - težina kratkog (0-1)"
+    min: 0
+    max: 1
+    step: 0.05
+    initial: 0.3
+  ai_kuca_param_pred_weight_long:
+    name: "🔮 Predikcija - težina dugog (0-1)"
+    min: 0
+    max: 1
+    step: 0.05
+    initial: 0.7
+  ai_kuca_param_vent_delta_on:
+    name: "💨 Ventilacija - delta ON (%)"
+    min: 1
+    max: 20
+    step: 0.5
+    unit_of_measurement: "%"
+    initial: 8.0
+  ai_kuca_param_vent_delta_off:
+    name: "💨 Ventilacija - delta OFF (%)"
+    min: 0.5
+    max: 10
+    step: 0.5
+    unit_of_measurement: "%"
+    initial: 4.0
+  ai_kuca_param_vent_abs_on:
+    name: "💨 Ventilacija - ABS ON (%)"
+    min: 50
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+    initial: 70.0
+  ai_kuca_param_vent_abs_off:
+    name: "💨 Ventilacija - ABS OFF (%)"
+    min: 40
+    max: 90
+    step: 1
+    unit_of_measurement: "%"
+    initial: 60.0
+  ai_kuca_param_vent_min_on_sec:
+    name: "💨 Ventilacija - MIN vrijeme (sek)"
+    min: 60
+    max: 3600
+    step: 30
+    unit_of_measurement: "s"
+    initial: 300
+  ai_kuca_param_vent_min_off_sec:
+    name: "💨 Ventilacija - MIN pauza (sek)"
+    min: 30
+    max: 1800
+    step: 30
+    unit_of_measurement: "s"
+    initial: 180
+  ai_kuca_param_vent_outdoor_max:
+    name: "💨 Ventilacija - MAX vanjska vlaga (%)"
+    min: 60
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+    initial: 80.0
+  ai_kuca_param_vent_interval:
+    name: "💨 Ventilacija - interval provjere (sek)"
+    min: 10
+    max: 300
+    step: 10
+    unit_of_measurement: "s"
+    initial: 60
+
+  # ========== FLOW TEMPERATURE CURVE (KRIVULJA GRIJANJA) ==========
+  ai_kuca_param_flow_base_offset:
+    name: "🔥 Krivulja - base offset (°C)"
+    min: -10
+    max: 10
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 2.0
+  ai_kuca_param_flow_t_ref:
+    name: "🔥 Krivulja - t_ref (°C)"
+    min: 10
+    max: 30
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 20.0
+  ai_kuca_param_flow_slope_cold:
+    name: "🔥 Krivulja - slope_cold"
+    min: 0.5
+    max: 3.0
+    step: 0.01
+    initial: 1.6
+  ai_kuca_param_flow_slope_mid:
+    name: "🔥 Krivulja - slope_mid"
+    min: 0.5
+    max: 3.0
+    step: 0.01
+    initial: 1.3
+  ai_kuca_param_flow_slope_warm:
+    name: "🔥 Krivulja - slope_warm"
+    min: 0.5
+    max: 3.0
+    step: 0.01
+    initial: 1.0
+  ai_kuca_param_flow_min_temp:
+    name: "🔥 Krivulja - min_temp (°C)"
+    min: 20
+    max: 50
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 35.0
+  ai_kuca_param_flow_max_temp:
+    name: "🔥 Krivulja - max_temp (°C)"
+    min: 40
+    max: 80
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 75.0
+  ai_kuca_param_flow_boiler_hyst_on:
+    name: "🔥 Krivulja - boiler_hyst_on (°C)"
+    min: 0
+    max: 10
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 2.0
+  ai_kuca_param_flow_boiler_hyst_off:
+    name: "🔥 Krivulja - boiler_hyst_off (°C)"
+    min: 0
+    max: 10
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 2.0
+  ai_kuca_param_flow_boiler_offset:
+    name: "🔥 Krivulja - boiler_offset (°C)"
+    min: -10
+    max: 10
+    step: 0.1
+    unit_of_measurement: "°C"
+    initial: 0.0

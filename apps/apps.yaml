@@ -1,0 +1,52 @@
+﻿ai_config_validator:
+  module: ai_kuca.modules.config.validator
+  class: AIConfigValidator
+  namespace: default
+
+ai_heating_main:
+  module: ai_kuca.modules.heating.main
+  class: AIHeatingMain
+  namespace: default
+
+ai_overheat:
+  module: ai_kuca.modules.heating.overheat
+  class: AIOverheat
+  namespace: default
+
+valve_control:
+  module: ai_kuca.modules.heating.valve
+  class: ValveControl
+  namespace: default
+
+ai_boost:
+  module: ai_kuca.modules.heating.boost
+  class: AIBoost
+  namespace: default
+
+ai_pump:
+  module: ai_kuca.modules.heating.pump
+  class: AIPump
+  namespace: default
+
+predictive_sensors:
+  module: ai_kuca.modules.predictive.temperature
+  class: PredictiveSensors
+  namespace: default
+
+predictive_humidity:
+  module: ai_kuca.modules.predictive.humidity
+  class: PredictiveHumidity
+  namespace: default
+
+ai_ventilation_main:
+  module: ai_kuca.modules.ventilation.main
+  class: AIVentilacijaMain
+  namespace: default
+
+ai_kuca_status:
+  module: ai_kuca.modules.system.status
+  class: AIKucaStatus
+  namespace: default
+
+
+

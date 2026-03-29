@@ -1,0 +1,704 @@
+title: "🔧 AI Kuća Konfigurator"
+
+views:
+  # ============================================================================
+  # VIEW 1: DASHBOARD - Informacije, temperature, vlažnosti, predikcije, logovi
+  # ============================================================================
+  - title: "📊 Dashboard"
+    path: ai-kuca-dashboard
+    cards:
+      # ========== HEADER SECTION ==========
+      - type: custom:mushroom-title-card
+        title: AI Heating Mobile+
+        subtitle: Responsive dashboard optimiziran za sveže uređaje
+      - type: custom:mushroom-chips-card
+        chips:
+          - type: entity
+            entity: sensor.cm_pelet_set_boiler_temperature
+            name: Kotao
+            icon: mdi:fire
+            icon_color: red
+          - type: entity
+            entity: sensor.cm_pelet_set_circuit_1_flow_measured_temperature
+            name: Flow
+            icon: mdi:thermometer-lines
+            icon_color: orange
+          - type: entity
+            entity: sensor.ai_recommended_flow_temperature
+            name: AI Flow
+            icon: mdi:target
+          - type: entity
+            entity: switch.pumpa_grijanja
+            name: Pumpa
+            icon: mdi:pump
+          - type: entity
+            entity: input_boolean.overheat_active
+            name: Overheat
+            icon: mdi:alert
+          - type: entity
+            entity: input_boolean.grijanje_na_pelet
+            name: Grijanje na pelet
+            icon: mdi:fire
+          - type: entity
+            entity: input_boolean.zagrijavanje_sanitarne_vode
+            name: Zagrijavanje sanitarne vode
+            icon: mdi:water-boiler-auto
+            use_entity_picture: false
+
+      # ========== STATUS & CONTROL SECTION ==========
+      - type: grid
+        columns: 4
+        square: false
+        cards:
+          - type: custom:mushroom-entity-card
+            entity: input_boolean.ai_heating_active
+            name: AI Heating
+            icon: mdi:home-thermometer
+          - type: custom:mushroom-entity-card
+            entity: input_boolean.ai_heating_eco
+            name: ECO Mode
+            icon: mdi:leaf
+          - type: custom:mushroom-entity-card
+            entity: input_select.boost_soba
+            name: Boost soba
+            icon: mdi:target
+          - type: custom:mushroom-entity-card
+            entity: input_select.turbo_boost_duration
+            name: Trajanje
+            icon: mdi:timer
+      - type: custom:mushroom-template-card
+        entity: sensor.ai_kuca_log_status
+        primary: Status AI_KUCA
+        secondary: "{{ states('sensor.ai_kuca_log_status') }}"
+        icon: mdi:check-decagram
+        color: green
+        features_position: bottom
+
+      # ========== ALERTS SECTION ==========
+      - type: conditional
+        conditions:
+          - entity: input_boolean.overheat_active
+            state: "on"
+        card:
+          type: custom:mushroom-template-card
+          primary: ⚠️ OVERHEAT AKTIVAN
+          secondary: Sigurnosni režim je uključen. Provjeri kotao, pumpu i ventil.
+          icon: mdi:alert-octagon
+          multiline_secondary: true
+          entity: input_boolean.overheat_active
+          color: red
+      - type: conditional
+        conditions:
+          - entity: input_boolean.ai_heating_eco
+            state: "on"
+        card:
+          type: custom:mushroom-template-card
+          primary: 🍃 ECO je aktivan
+          secondary: Targeti su spušteni za 2°C relativno na trenutne vrijednosti.
+          icon: mdi:leaf
+          entity: input_boolean.ai_heating_eco
+          color: green
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: input_boolean.grijanje_na_pelet
+            state: "on"
+        card:
+          type: custom:mushroom-template-card
+          primary: 🔥 Grijanje na pelet je aktivno
+          icon: mdi:fire
+          entity: input_boolean.grijanje_na_pelet
+          color: orange
+          secondary: Automatsko grijanje na pelet
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: input_boolean.zagrijavanje_sanitarne_vode
+            state: "on"
+        card:
+          type: custom:mushroom-template-card
+          primary: 💧 Zagrijavanje sanitarne vode
+          icon: mdi:water-boiler-auto
+          entity: input_boolean.zagrijavanje_sanitarne_vode
+          color: orange
+          secondary: Jednokratno grijanje boilera > 55°C
+      - type: conditional
+        conditions:
+          - entity: switch.pumpa_grijanja
+            state: "on"
+        card:
+          type: grid
+          columns: 4
+          square: false
+          title: Pumpa/ventil detalji (Pumpa ON)
+          cards:
+            - type: custom:mushroom-entity-card
+              entity: switch.pumpa_grijanja
+              name: Pumpa
+              icon: mdi:pump
+            - type: custom:mushroom-entity-card
+              entity: input_boolean.mis_ventil_pauza
+              name: Ventil pauza
+              icon: mdi:pause-circle
+            - type: custom:mushroom-entity-card
+              entity: switch.otvaranje_mis_ventila
+              name: Otvaranje
+              icon: mdi:valve-open
+            - type: custom:mushroom-entity-card
+              entity: switch.zatvaranje_mis_ventila
+              name: Zatvaranje
+              icon: mdi:valve-closed
+
+      # ========== CLIMATE ZONE SECTION ==========
+      - type: custom:mushroom-title-card
+        title: 🌡️ Klimatizirana područja
+      - type: grid
+        columns: 3
+        square: false
+        cards:
+          - type: custom:mushroom-climate-card
+            entity: climate.radijator_dnevna
+            name: Dnevna
+            hvac_modes: []
+            show_temperature_control: true
+            collapsible_controls: true
+          - type: custom:mushroom-climate-card
+            entity: climate.radijator_spavaca
+            name: Spavaća
+            hvac_modes: []
+            show_temperature_control: true
+            collapsible_controls: true
+          - type: custom:mushroom-climate-card
+            entity: climate.radijator_kupaona
+            name: Kupaona
+            hvac_modes: []
+            show_temperature_control: true
+            collapsible_controls: true
+          - type: custom:mushroom-climate-card
+            entity: climate.radijator_tia
+            name: Tia
+            hvac_modes: []
+            show_temperature_control: true
+            collapsible_controls: true
+          - type: custom:mushroom-climate-card
+            entity: climate.radiator_mali
+            name: Mali
+            hvac_modes: []
+            show_temperature_control: true
+            collapsible_controls: true
+          - type: custom:mushroom-climate-card
+            entity: climate.radijator_spajz
+            name: Špajz
+            hvac_modes: []
+            show_temperature_control: true
+            collapsible_controls: true
+
+      # ========== TEMPERATURE & HUMIDITY SECTION ==========
+      - type: custom:mushroom-title-card
+        title: 📊 Stvarne temperature i vlaga
+      - type: grid
+        columns: 3
+        square: false
+        cards:
+          - type: custom:mushroom-entity-card
+            entity: sensor.temperatura_dnevna
+            name: 🏠 Dnevna
+          - type: custom:mushroom-entity-card
+            entity: sensor.vlaznost_dnevna
+            name: 💨 Dnevna
+          - type: custom:mushroom-entity-card
+            entity: sensor.temperatura_spavaca
+            name: 🛏️ Spavaća
+          - type: custom:mushroom-entity-card
+            entity: sensor.vlaznost_spavaca
+            name: 💨 Spavaća
+          - type: custom:mushroom-entity-card
+            entity: sensor.temperatura_kupaona
+            name: 🚿 Kupaona
+          - type: custom:mushroom-entity-card
+            entity: sensor.vlaznost_kupaona
+            name: 💨 Kupaona
+          - type: custom:mushroom-entity-card
+            entity: sensor.temperatura_tia
+            name: 🎭 Tia
+          - type: custom:mushroom-entity-card
+            entity: sensor.vlaznost_tia
+            name: 💨 Tia
+          - type: custom:mushroom-entity-card
+            entity: sensor.temperatura_hodnik
+            name: 🚪 Mali (hodnik)
+          - type: custom:mushroom-entity-card
+            entity: sensor.vlaznost_hodnik
+            name: 💨 Mali (hodnik)
+          - type: custom:mushroom-entity-card
+            entity: sensor.temperatura_spajz
+            name: 📦 Špajz
+          - type: custom:mushroom-entity-card
+            entity: sensor.vlaznost_spajz
+            name: 💨 Špajz
+
+      # ========== PREDICTIONS SECTION ==========
+      - type: custom:mushroom-title-card
+        title: 🔮 Predikcija temperature (1h)
+      - type: grid
+        columns: 3
+        square: false
+        cards:
+          - type: custom:mushroom-template-card
+            entity: sensor.predict_dnevna_1h
+            primary: Dnevna
+            secondary: "{{ states(entity) }} °C {% if state_attr(entity,'window_open') %} | 🪟 {% endif %}"
+            icon: "{% set t = state_attr(entity,'trend') %} {% if t == 'heating' %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {% else %} mdi:minus {% endif %}"
+            icon_color: "{% set t = state_attr(entity,'trend') %} {% if t == 'heating' %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %} green {% else %} grey {% endif %}"
+          - type: custom:mushroom-template-card
+            entity: sensor.predict_spavaca_1h
+            primary: Spavaća
+            secondary: "{{ states(entity) }} °C {% if state_attr(entity,'window_open') %} | 🪟 {% endif %}"
+            icon: "{% set t = state_attr(entity,'trend') %} {% if t == 'heating' %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {% else %} mdi:minus {% endif %}"
+            icon_color: "{% set t = state_attr(entity,'trend') %} {% if t == 'heating' %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %} green {% else %} grey {% endif %}"
+          - type: custom:mushroom-template-card
+            entity: sensor.predict_kupaona_1h
+            primary: Kupaona
+            secondary: "{{ states(entity) }} °C {% if state_attr(entity,'window_open') %} | 🪟 {% endif %}"
+            icon: "{% set t = state_attr(entity,'trend') %} {% if t == 'heating' %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {% else %} mdi:minus {% endif %}"
+            icon_color: "{% set t = state_attr(entity,'trend') %} {% if t == 'heating' %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %} green {% else %} grey {% endif %}"
+          - type: custom:mushroom-template-card
+            entity: sensor.predict_tia_1h
+            primary: Tia
+            secondary: "{{ states(entity) }} °C {% if state_attr(entity,'window_open') %} | 🪟 {% endif %}"
+            icon: "{% set t = state_attr(entity,'trend') %} {% if t == 'heating' %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {% else %} mdi:minus {% endif %}"
+            icon_color: "{% set t = state_attr(entity,'trend') %} {% if t == 'heating' %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %} green {% else %} grey {% endif %}"
+          - type: custom:mushroom-template-card
+            entity: sensor.predict_mali_1h
+            primary: Mali (hodnik)
+            secondary: "{{ states(entity) }} °C {% if state_attr(entity,'window_open') %} | 🪟 {% endif %}"
+            icon: "{% set t = state_attr(entity,'trend') %} {% if t == 'heating' %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {% else %} mdi:minus {% endif %}"
+            icon_color: "{% set t = state_attr(entity,'trend') %} {% if t == 'heating' %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %} green {% else %} grey {% endif %}"
+          - type: custom:mushroom-template-card
+            entity: sensor.predict_spajz_1h
+            primary: Špajz
+            secondary: "{{ states(entity) }} °C {% if state_attr(entity,'window_open') %} | 🪟 {% endif %}"
+            icon: "{% set t = state_attr(entity,'trend') %} {% if t == 'heating' %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {% else %} mdi:minus {% endif %}"
+            icon_color: "{% set t = state_attr(entity,'trend') %} {% if t == 'heating' %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %} green {% else %} grey {% endif %}"
+
+      # ========== LOGS SECTION ==========
+      - type: custom:mushroom-title-card
+        title: 📋 Logovi AI_KUCA
+      - type: grid
+        columns: 3
+        square: false
+        cards:
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_grijanje
+            primary: 🔥 Grijanje
+            secondary: "{{ states('sensor.ai_kuca_log_grijanje')[:100] }}..."
+            icon: mdi:home-thermometer
+            icon_color: orange
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_overheat
+            primary: ⚠️ Overheat
+            secondary: "{{ states('sensor.ai_kuca_log_overheat')[:100] }}..."
+            icon: mdi:alert-octagon
+            icon_color: red
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_pumpa
+            primary: 💧 Pumpa
+            secondary: "{{ states('sensor.ai_kuca_log_pumpa')[:100] }}..."
+            icon: mdi:pump
+            icon_color: blue
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_ventil
+            primary: 🚰 Ventil
+            secondary: "{{ states('sensor.ai_kuca_log_ventil')[:100] }}..."
+            icon: mdi:valve
+            icon_color: purple
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_ventilacija
+            primary: 💨 Ventilacija
+            secondary: "{{ states('sensor.ai_kuca_log_ventilacija')[:100] }}..."
+            icon: mdi:fan
+            icon_color: blue
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_boost
+            primary: 🚀 Boost
+            secondary: "{{ states('sensor.ai_kuca_log_boost')[:100] }}..."
+            icon: mdi:rocket-launch
+            icon_color: deep-orange
+
+  # ============================================================================
+  # VIEW 2: ROOM CONFIG
+  # ============================================================================
+  - title: "🏠 Room Config"
+    path: ai-kuca-room
+    cards:
+      - type: markdown
+        content: |
+          # 🏠 Room Config Builder
+          Dodaj/uredi sobu po sobu
+
+      - type: entities
+        title: "STEP 1: Odaberi što konfigurirati"
+        entities:
+          - input_select.ai_kuca_config_mode
+
+      - type: entities
+        title: "STEP 2: Odaberi sobu (Room Config)"
+        entities:
+          - input_select.ai_kuca_room_select
+
+      - type: entities
+        title: "Room Config: Podaci o sobi"
+        entities:
+          - input_text.ai_kuca_room_builder_name
+          - input_text.ai_kuca_room_builder_target
+
+      - type: entities
+        title: "Room Config: Entiteti sobe"
+        entities:
+          - input_select.ai_kuca_room_builder_climate
+          - input_select.ai_kuca_room_builder_temp_sensor
+          - input_select.ai_kuca_room_builder_humidity_sensor
+          - input_select.ai_kuca_room_builder_fan
+          - input_text.ai_kuca_room_builder_windows
+
+      - type: entities
+        title: "Room Config: Generiraj/Obriši sobu"
+        entities:
+          - input_boolean.ai_kuca_room_builder_generate
+          - input_boolean.ai_kuca_room_builder_delete
+
+      - type: entities
+        title: "FINALE: Spremi sobu na disk"
+        entities:
+          - input_boolean.ai_kuca_reload_config
+
+  # ============================================================================
+  # VIEW 3: SYSTEM CONFIG - ENTITETI
+  # ============================================================================
+  - title: "⚙️ System Config"
+    path: ai-kuca-system
+    cards:
+      - type: markdown
+        content: |
+          # ⚙️ System Config - Entiteti
+          Odaberi senzore i switch-eve
+
+      - type: entities
+        title: "System Config: Senzori"
+        entities:
+          - input_select.ai_kuca_heating_flow_sensor
+          - input_select.ai_kuca_heating_boiler_sensor
+          - input_text.ai_kuca_outdoor_temp_sensors
+          - input_select.ai_kuca_flow_sensor_2
+          - input_select.ai_kuca_target_sensor
+
+      - type: entities
+        title: "System Config: Switch-evi"
+        entities:
+          - input_select.ai_kuca_heating_active_switch
+          - input_select.ai_kuca_heating_eco_switch
+          - input_select.ai_kuca_heating_overheat_switch
+          - input_select.ai_kuca_pump_switch
+
+      - type: entities
+        title: "System Config: Ventil kontrola (Mis ventil)"
+        entities:
+          - input_select.ai_kuca_valve_pause
+          - input_select.ai_kuca_valve_open
+          - input_select.ai_kuca_valve_close
+
+      - type: entities
+        title: "FINALE: Spremi na disk"
+        entities:
+          - input_boolean.ai_kuca_generate_config
+          - input_boolean.ai_kuca_reload_config
+
+  # ============================================================================
+  # VIEW 4: GRIJANJA - Heating, Overheat, Valve, Pump
+  # ============================================================================
+  - title: "🔥 Grijanja"
+    path: ai-kuca-heating
+    cards:
+      - type: markdown
+        content: |
+          # 🔥 Parametri Grijanja
+          Sve što je vezano za grijanje
+
+      - type: entities
+        title: "🌡️ Heating Main - Temperaturne granice"
+        entities:
+          - input_number.ai_kuca_param_max_room_temp
+          - input_number.ai_kuca_param_min_room_temp
+          - input_number.ai_kuca_param_eco_delta
+
+      - type: entities
+        title: "⚠️ Overheat - Zaštita od pregrijavanja"
+        entities:
+          - input_number.ai_kuca_param_overheat_loop_interval
+          - input_number.ai_kuca_param_stage1_on
+          - input_number.ai_kuca_param_stage1_off
+          - input_number.ai_kuca_param_stage2_on
+          - input_number.ai_kuca_param_stage2_off
+
+      - type: entities
+        title: "🚰 Ventil kontrola - Delayevi i pragovi"
+        entities:
+          - input_number.ai_kuca_param_valve_start_delay
+          - input_number.ai_kuca_param_valve_deadband
+          - input_number.ai_kuca_param_valve_min_pulse
+          - input_number.ai_kuca_param_valve_max_pulse
+          - input_number.ai_kuca_param_valve_max_error
+
+      - type: entities
+        title: "💧 Pumpa grijanja - Delayevi i timing"
+        entities:
+          - input_number.ai_kuca_param_pump_start_delay
+          - input_number.ai_kuca_param_pump_off_delay
+          - input_number.ai_kuca_param_pump_cooldown
+          - input_number.ai_kuca_param_pump_min_on
+          - input_number.ai_kuca_param_pump_min_off
+          - input_number.ai_kuca_param_pump_loop_interval
+
+      - type: entities
+        title: "FINALE: Spremi na disk"
+        entities:
+          - input_boolean.ai_kuca_generate_config
+          - input_boolean.ai_kuca_reload_config
+
+  # ============================================================================
+  # VIEW 5: VENTILACIJA
+  # ============================================================================
+  - title: "💨 Ventilacija"
+    path: ai-kuca-vent
+    cards:
+      - type: markdown
+        content: |
+          # 💨 Parametri Ventilacije
+          Globalni i po-sobna ventilacijska konfiguracija
+
+      - type: entities
+        title: "💨 Ventilacija - Globalni parametri"
+        entities:
+          - input_number.ai_kuca_param_vent_delta_on
+          - input_number.ai_kuca_param_vent_delta_off
+          - input_number.ai_kuca_param_vent_abs_on
+          - input_number.ai_kuca_param_vent_abs_off
+          - input_number.ai_kuca_param_vent_min_on_sec
+          - input_number.ai_kuca_param_vent_min_off_sec
+          - input_number.ai_kuca_param_vent_outdoor_max
+          - input_number.ai_kuca_param_vent_interval
+
+      - type: entities
+        title: "FINALE: Spremi na disk"
+        entities:
+          - input_boolean.ai_kuca_generate_config
+          - input_boolean.ai_kuca_reload_config
+
+  # ============================================================================
+  # VIEW 6: PREDIKCIJA
+  # ============================================================================
+  - title: "🔮 Predikcija"
+    path: ai-kuca-pred
+    cards:
+      - type: markdown
+        content: |
+          # 🔮 Parametri Predikcije
+          Algoritamski parametri za predviđanje temperature
+
+      - type: entities
+        title: "🔮 Predikcija temperature - Algoritamski parametri"
+        entities:
+          - input_number.ai_kuca_param_pred_window_short
+          - input_number.ai_kuca_param_pred_window_long
+          - input_number.ai_kuca_param_pred_min_points_short
+          - input_number.ai_kuca_param_pred_min_points_long
+          - input_number.ai_kuca_param_pred_loss_coeff
+          - input_number.ai_kuca_param_pred_window_mult
+          - input_number.ai_kuca_param_pred_weight_short
+          - input_number.ai_kuca_param_pred_weight_long
+
+      - type: entities
+        title: "FINALE: Spremi na disk"
+        entities:
+          - input_boolean.ai_kuca_generate_config
+          - input_boolean.ai_kuca_reload_config
+
+  # ============================================================================
+  # VIEW 7: STATUS - Logovi i konfiguracija
+  # ============================================================================
+  - title: "📋 Status"
+    path: ai-kuca-status
+    cards:
+      - type: markdown
+        content: |
+          # 📋 Status i Logovi
+          Konfiguracija, status i logovi sistema
+
+      - type: entities
+        title: "Config Status"
+        entities:
+          - sensor.ai_kuca_config
+          - sensor.ai_kuca_log_status
+
+      - type: entities
+        title: "Generirani YAML"
+        entities:
+          - input_text.ai_kuca_system_config
+          - input_text.ai_kuca_room_config
+
+      - type: custom:mushroom-template-card
+        entity: sensor.ai_kuca_log_grijanje
+        primary: Log Grijanje (glavni)
+        secondary: |
+          {{ states('sensor.ai_kuca_log_grijanje') }}
+        icon: mdi:home-thermometer
+        icon_color: orange
+
+      - type: custom:mushroom-template-card
+        entity: sensor.ai_kuca_log_overheat
+        primary: Log Overheat
+        secondary: |
+          {{ states('sensor.ai_kuca_log_overheat') }}
+        icon: mdi:alert-octagon
+        icon_color: red
+
+      - type: custom:mushroom-template-card
+        entity: sensor.ai_kuca_log_pumpa
+        primary: Log Pumpa
+        secondary: |
+          {{ states('sensor.ai_kuca_log_pumpa') }}
+        icon: mdi:pump
+        icon_color: blue
+
+      - type: custom:mushroom-template-card
+        entity: sensor.ai_kuca_log_ventil
+        primary: Log Ventil
+        secondary: |
+          {{ states('sensor.ai_kuca_log_ventil') }}
+        icon: mdi:valve
+        icon_color: purple
+
+      - type: custom:mushroom-template-card
+        entity: sensor.ai_kuca_log_boost
+        primary: Log Boost
+        secondary: |
+          {{ states('sensor.ai_kuca_log_boost') }}
+        icon: mdi:rocket-launch
+        icon_color: deep-orange
+
+      - type: custom:mushroom-template-card
+        entity: sensor.ai_kuca_log_predikcija_temperature
+        primary: Log Predikcija temperature
+        secondary: |
+          {{ states('sensor.ai_kuca_log_predikcija_temperature') }}
+        icon: mdi:chart-line
+        icon_color: teal
+
+      - type: custom:mushroom-template-card
+        entity: sensor.ai_kuca_log_predikcija_vlage
+        primary: Log Predikcija vlage
+        secondary: |
+          {{ states('sensor.ai_kuca_log_predikcija_vlage') }}
+        icon: mdi:water-percent
+        icon_color: blue
+
+      - type: custom:mushroom-template-card
+        entity: sensor.ai_kuca_log_ventilacija
+        primary: Log Ventilacija
+        secondary: |
+          {{ states('sensor.ai_kuca_log_ventilacija') }}
+        icon: mdi:fan
+        icon_color: blue
+
+  # ============================================================================
+  # VIEW 8: SVI AI KUĆA HELPERI (GRUPIRANO)
+  # ============================================================================
+  - title: "🛠️ Svi AI Kuća helperi (grupirano)"
+    path: ai-kuca-helpers
+    cards:
+      - type: entities
+        title: "Input Boolean (prekidači)"
+        show_header_toggle: false
+        entities:
+          - input_boolean.ai_heating_active
+          - input_boolean.ai_heating_eco
+          - input_boolean.ai_kuca_reload_config
+          - input_boolean.ai_kuca_generate_config
+          - input_boolean.ai_kuca_room_builder_generate
+          - input_boolean.ai_kuca_room_builder_delete
+      - type: entities
+        title: "Input Text (tekstualni podaci)"
+        show_header_toggle: false
+        entities:
+          - input_text.ai_kuca_system_config
+          - input_text.ai_kuca_room_config
+          - input_text.ai_kuca_room_builder_name
+          - input_text.ai_kuca_room_builder_target
+          - input_text.ai_kuca_room_builder_windows
+          - input_text.ai_kuca_outdoor_temp_sensors
+          - input_text.ai_kuca_climate_entities
+      - type: entities
+        title: "Input Select (dropdown izbornici)"
+        show_header_toggle: false
+        entities:
+          - input_select.ai_kuca_config_mode
+          - input_select.ai_kuca_room_select
+          - input_select.ai_kuca_heating_flow_sensor
+          - input_select.ai_kuca_heating_boiler_sensor
+          - input_select.ai_kuca_heating_outdoor_sensor
+          - input_select.ai_kuca_heating_active_switch
+          - input_select.ai_kuca_heating_eco_switch
+          - input_select.ai_kuca_heating_overheat_switch
+          - input_select.ai_kuca_pump_switch
+          - input_select.ai_kuca_valve_pause
+          - input_select.ai_kuca_valve_open
+          - input_select.ai_kuca_valve_close
+          - input_select.ai_kuca_flow_sensor_2
+          - input_select.ai_kuca_target_sensor
+          - input_select.ai_kuca_room_builder_climate
+          - input_select.ai_kuca_room_builder_temp_sensor
+          - input_select.ai_kuca_room_builder_humidity_sensor
+          - input_select.ai_kuca_room_builder_fan
+          - input_select.boost_soba
+          - input_select.turbo_boost_duration
+          - input_select.ai_kuca_boost_select
+          - input_select.ai_kuca_duration_select
+      - type: entities
+        title: "Input Number (numerički parametri)"
+        show_header_toggle: false
+        entities:
+          - input_number.ai_kuca_param_max_room_temp
+          - input_number.ai_kuca_param_min_room_temp
+          - input_number.ai_kuca_param_eco_delta
+          - input_number.ai_kuca_param_overheat_loop_interval
+          - input_number.ai_kuca_param_stage1_on
+          - input_number.ai_kuca_param_stage1_off
+          - input_number.ai_kuca_param_stage2_on
+          - input_number.ai_kuca_param_stage2_off
+          - input_number.ai_kuca_param_valve_start_delay
+          - input_number.ai_kuca_param_valve_deadband
+          - input_number.ai_kuca_param_valve_min_pulse
+          - input_number.ai_kuca_param_valve_max_pulse
+          - input_number.ai_kuca_param_valve_max_error
+          - input_number.ai_kuca_param_pump_start_delay
+          - input_number.ai_kuca_param_pump_off_delay
+          - input_number.ai_kuca_param_pump_cooldown
+          - input_number.ai_kuca_param_pump_min_on
+          - input_number.ai_kuca_param_pump_min_off
+          - input_number.ai_kuca_param_pump_loop_interval
+          - input_number.ai_kuca_param_pred_window_short
+          - input_number.ai_kuca_param_pred_window_long
+          - input_number.ai_kuca_param_pred_min_points_short
+          - input_number.ai_kuca_param_pred_min_points_long
+          - input_number.ai_kuca_param_pred_loss_coeff
+          - input_number.ai_kuca_param_pred_window_mult
+          - input_number.ai_kuca_param_pred_weight_short
+          - input_number.ai_kuca_param_pred_weight_long
+          - input_number.ai_kuca_param_vent_delta_on
+          - input_number.ai_kuca_param_vent_delta_off
+          - input_number.ai_kuca_param_vent_abs_on
+          - input_number.ai_kuca_param_vent_abs_off
+          - input_number.ai_kuca_param_vent_min_on_sec
+          - input_number.ai_kuca_param_vent_min_off_sec
+          - input_number.ai_kuca_param_vent_outdoor_max
+          - input_number.ai_kuca_param_vent_interval

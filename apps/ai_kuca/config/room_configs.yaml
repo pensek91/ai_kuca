@@ -1,0 +1,125 @@
+spavaca:
+  climate: climate.radijator_spavaca
+  temp_sensor: sensor.temperatura_spavaca
+  humidity_sensor: sensor.vlaznost_spavaca
+  window_sensors:
+  - binary_sensor.contact_sensor_2_vrata
+  target: 21.0
+  target_step: 1.0
+  predictive:
+    auto_apply_targets: true
+    deadband: 0.2
+    max_step_per_cycle: 0.5
+    min_temp: 16.0
+    max_temp: 25.0
+    smart_boost_enabled: true
+    smart_boost_delta: 2.0
+    smart_boost_max: 25.0
+    smart_boost_deadband: 0.5
+dnevna:
+  climate: climate.radijator_dnevna
+  temp_sensor: sensor.temperatura_dnevna
+  humidity_sensor: sensor.vlaznost_dnevna
+  fan: fan.ventilator_dnevna
+  ventilation:
+    delta_on: 4.0
+    delta_off: 2.0
+    abs_on: 60.0
+    abs_off: 55.0
+    min_on_sec: 300
+    min_off_sec: 180
+  window_sensors:
+  - binary_sensor.dnevna_prozor
+  - binary_sensor.contact_sensor_4_vrata
+  - binary_sensor.senzor_vrata
+  target: 21.0
+  target_step: 0.5
+  predictive:
+    auto_apply_targets: true
+    deadband: 0.2
+    max_step_per_cycle: 0.5
+    min_temp: 16.0
+    max_temp: 25.0
+    smart_boost_enabled: true
+    smart_boost_delta: 2.0
+    smart_boost_max: 25.0
+    smart_boost_deadband: 0.5
+kupaona:
+  climate: climate.radijator_kupaona
+  temp_sensor: sensor.temperatura_kupaona
+  humidity_sensor: sensor.vlaznost_kupaona
+  fan: fan.ventilator_kupaona
+  ventilation:
+    delta_on: 4.0
+    delta_off: 2.0
+    abs_on: 62.0
+    abs_off: 57.0
+    min_on_sec: 600
+    min_off_sec: 120
+  window_sensors:
+  - binary_sensor.contact_sensor_vrata
+  target: 21.0
+  target_step: 1.0
+  predictive:
+    auto_apply_targets: true
+    deadband: 0.2
+    max_step_per_cycle: 0.5
+    min_temp: 16.0
+    max_temp: 25.0
+    smart_boost_enabled: true
+    smart_boost_delta: 2.0
+    smart_boost_max: 25.0
+    smart_boost_deadband: 0.5
+tia:
+  climate: climate.radijator_tia
+  temp_sensor: sensor.temperatura_tia
+  humidity_sensor: sensor.vlaznost_tia
+  window_sensors:
+  - binary_sensor.prozor_tia
+  target: 15.0
+  target_step: 1.0
+  predictive:
+    auto_apply_targets: true
+    deadband: 0.2
+    max_step_per_cycle: 0.5
+    min_temp: 12.0
+    max_temp: 18.0
+    smart_boost_enabled: true
+    smart_boost_delta: 2.0
+    smart_boost_max: 18.0
+    smart_boost_deadband: 0.5
+mali:
+  climate: climate.radiator_mali
+  temp_sensor: sensor.temperatura_hodnik
+  humidity_sensor: sensor.vlaznost_hodnik
+  target: 21.0
+  target_step: 1.0
+  predictive:
+    auto_apply_targets: true
+    deadband: 0.2
+    max_step_per_cycle: 0.5
+    min_temp: 16.0
+    max_temp: 25.0
+    smart_boost_enabled: true
+    smart_boost_delta: 2.0
+    smart_boost_max: 25.0
+    smart_boost_deadband: 0.5
+  window_sensors: []
+spajz:
+  climate: climate.radijator_spajz
+  temp_sensor: sensor.temperatura_spajz
+  humidity_sensor: sensor.vlaznost_spajz
+  window_sensors:
+  - binary_sensor.contact_sensor_3_vrata
+  target: 10.0
+  target_step: 0.5
+  predictive:
+    auto_apply_targets: true
+    deadband: 0.2
+    max_step_per_cycle: 0.5
+    min_temp: 8.0
+    max_temp: 13.0
+    smart_boost_enabled: true
+    smart_boost_delta: 2.0
+    smart_boost_max: 13.0
+    smart_boost_deadband: 0.5

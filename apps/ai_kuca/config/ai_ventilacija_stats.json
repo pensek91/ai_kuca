@@ -1,0 +1,48 @@
+{
+  "generated_at": "2026-03-29T08:11:59.462401+00:00",
+  "window_minutes": 120,
+  "rooms": {
+    "spavaca": {
+      "samples": 120,
+      "current": 61.51,
+      "min": 60.01,
+      "max": 61.51,
+      "avg": 60.95
+    },
+    "dnevna": {
+      "samples": 120,
+      "current": 59.93,
+      "min": 57.28,
+      "max": 59.93,
+      "avg": 58.3
+    },
+    "kupaona": {
+      "samples": 120,
+      "current": 64.77,
+      "min": 60.73,
+      "max": 64.77,
+      "avg": 61.93
+    },
+    "tia": {
+      "samples": 120,
+      "current": 59.99,
+      "min": 59.0,
+      "max": 59.99,
+      "avg": 59.79
+    },
+    "mali": {
+      "samples": 120,
+      "current": 50.96,
+      "min": 49.14,
+      "max": 50.96,
+      "avg": 50.3
+    },
+    "spajz": {
+      "samples": 120,
+      "current": 72.65,
+      "min": 72.24,
+      "max": 72.65,
+      "avg": 72.28
+    }
+  }
+}

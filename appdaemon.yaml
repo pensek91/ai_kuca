@@ -1,0 +1,11 @@
+﻿appdaemon:
+  latitude: 45.8150
+  longitude: 15.9819
+  elevation: 120
+  time_zone: "Europe/Zagreb"
+
+  plugins:
+    HASS:
+      type: hass
+      ha_url: !env_var HA_URL
+      token: !env_var HA_KEY
