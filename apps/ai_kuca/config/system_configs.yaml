@@ -6,32 +6,20 @@ logging_level: WARNING
 
 # Postavke centralnog log senzora
 ai_kuca_log:
-  # HA entitet u koji se zapisuje centralni log
   sensor_entity: sensor.ai_kuca_log
-  # Koliko sekundi povijesti log poruka cuvamo
-  history_seconds: 120
-  # Maksimalan broj log zapisa u povijesti
-  max_items: 50
+  history_seconds: 1800  # čuvaj logove 30 minuta
+  max_items: 10          # maksimalno 10 logova
 
 # Postavke pojedinacnog log senzora
 ai_kuca_log_sensors:
-  #Log Grijanja
   heating_main: sensor.ai_kuca_log_grijanje
-  #Log Overheat
   overheat: sensor.ai_kuca_log_overheat
-  #Log Mis ventila
   valve_control: sensor.ai_kuca_log_ventil
-  #Log Boost
   boost: sensor.ai_kuca_log_boost
-  #Log Pumpe
   pump: sensor.ai_kuca_log_pumpa
-  #Log predikcije temperature
   predictive_temperature: sensor.ai_kuca_log_predikcija_temperature
-  #Log predikcije vlaznosti
   predictive_humidity: sensor.ai_kuca_log_predikcija_vlage
-  #Log Ventilacije
   ventilation: sensor.ai_kuca_log_ventilacija
-  #Log konfiguracije
   status: sensor.ai_kuca_log_status
 
 # Glavne postavke grijanja
