@@ -1,0 +1,25 @@
+# Python/AppDaemon .gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.swo
+.env
+.env.*
+venv/
+tuya/
+*.log
+*.bak
+*.backup
+.DS_Store
+.idea/
+.vscode/
+node_modules/
+# Backup and temp folders
+backups/
+*.tmp
+*.old
+# Home Assistant/Secrets
+secrets.yaml
+home-assistant.log*
