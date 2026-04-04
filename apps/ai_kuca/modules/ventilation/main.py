@@ -11,12 +11,11 @@ import time
 import json
 from datetime import datetime, timezone
 from collections import deque
-import yaml
-import appdaemon.plugins.hass.hassapi as hass
+from ai_kuca.core.base_app import BaseApp
 from ai_kuca.core.logger import push_log_to_ha
 
 
-class AIVentilacijaMain(hass.Hass):
+class AIVentilacijaMain(BaseApp):
     """
     Klasa za kontrolu ventilacije soba na temelju vlage.
     
@@ -25,18 +24,25 @@ class AIVentilacijaMain(hass.Hass):
     i pauzama, te provjerom vanjske vlage i prozora.
     """
     def initialize(self):
+        self.init_base()
+        system_cfg = self.load_system_config()
+        self.log_level = system_cfg.get("logging_level", "INFO")
+        log_cfg = system_cfg.get("ai_kuca_log", {})
+        log_map = system_cfg.get("ai_kuca_log_sensors", {})
+        self.log_sensor_entity = log_map.get(
+            "ventilation", log_cfg.get("sensor_entity", "sensor.ai_kuca_log")
+        )
+        self.log_history_seconds = int(log_cfg.get("history_seconds", 120))
+        self.log_max_items = int(log_cfg.get("max_items", 50))
+        self.version = "V1." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
+        self.log_h(f"AI ventilacija {self.version} pokrenuta", level="INFO")
         """
         Inicijalizira AIVentilacijaMain skriptu.
         
         UÄŤitava konfiguraciju soba i sustava, postavlja pragove i uÄŤitava povijest.
         PokreÄ‡e glavnu petlju svakih interval_sec sekundi.
         """
-        self.version = "V1." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
-        config_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", "room_configs.yaml")
-        )
-        with open(config_path, "r", encoding="utf-8") as f:
-            self.room_configs = yaml.safe_load(f) or {}
+        self.room_configs = self.load_yaml_file("room_configs.yaml")
 
         system_cfg = self.load_system_config()
         ventilation_cfg = system_cfg.get("ventilation", {})
@@ -126,6 +132,7 @@ class AIVentilacijaMain(hass.Hass):
 
             humidity = self.get_humidity(humidity_sensor)
             if humidity is None:
+                self.notify_missing_sensor(humidity_sensor, module_name="AIVentilacijaMain", cooldown_sec=900)
                 continue
 
             self.append_history(room_name, now, humidity)
@@ -279,6 +286,7 @@ class AIVentilacijaMain(hass.Hass):
                     level="DEBUG",
                 )
                 return val
+            self.notify_missing_sensor(self.outdoor_humidity_sensor, module_name="AIVentilacijaMain", cooldown_sec=900)
 
         forecast = None
         if self.forecast_entity:
@@ -355,9 +363,6 @@ class AIVentilacijaMain(hass.Hass):
         except Exception:
             return None
 
-    def load_system_config(self):
-        return self.load_yaml_file("system_configs.yaml")
-
     def append_history(self, room_name, now, humidity):
         if room_name not in self.history:
             self.history[room_name] = deque()
@@ -374,6 +379,10 @@ class AIVentilacijaMain(hass.Hass):
             with open(self.history_file_path, "r", encoding="utf-8") as f:
                 raw_history = json.load(f) or {}
         except FileNotFoundError:
+            self.log_h(
+                f"VENT: history file ne postoji, start s praznom povijesti | path={self.history_file_path}",
+                level="INFO",
+            )
             return
         except Exception as ex:
             self.log_h(
@@ -383,6 +392,7 @@ class AIVentilacijaMain(hass.Hass):
             return
 
         restored_rooms = []
+        invalid_entries = 0
         for room_name, entries in raw_history.items():
             if not isinstance(entries, list):
                 continue
@@ -394,6 +404,7 @@ class AIVentilacijaMain(hass.Hass):
                     ts = float(entry[0])
                     humidity = float(entry[1])
                 except Exception:
+                    invalid_entries += 1
                     continue
                 if ts >= cutoff:
                     history.append((ts, humidity))
@@ -407,12 +418,21 @@ class AIVentilacijaMain(hass.Hass):
                 f"VENT: vracen history iz zadnja {self.baseline_window_sec // 60} min za {rooms_text}",
                 level="INFO",
             )
+        if invalid_entries:
+            self.log_h(
+                f"VENT: preskoceni neispravni history zapisi | broj={invalid_entries} | path={self.history_file_path}",
+                level="DEBUG",
+            )
 
     def load_runtime_state(self):
         try:
             with open(self.state_file_path, "r", encoding="utf-8") as f:
                 raw_state = json.load(f) or {}
         except FileNotFoundError:
+            self.log_h(
+                f"VENT: runtime state file ne postoji, koristi se default stanje | path={self.state_file_path}",
+                level="INFO",
+            )
             return
         except Exception as ex:
             self.log_h(
@@ -426,17 +446,24 @@ class AIVentilacijaMain(hass.Hass):
             return
 
         restored_rooms = []
+        invalid_state_entries = 0
         for room_name, ts in raw_last_change.items():
             try:
                 self.last_change[room_name] = float(ts)
                 restored_rooms.append(room_name)
             except Exception:
+                invalid_state_entries += 1
                 continue
 
         if restored_rooms:
             self.log_h(
                 f"VENT: vracen runtime state za sobe: {', '.join(restored_rooms)}",
                 level="INFO",
+            )
+        if invalid_state_entries:
+            self.log_h(
+                f"VENT: preskoceni neispravni runtime zapisi | broj={invalid_state_entries} | path={self.state_file_path}",
+                level="DEBUG",
             )
 
     def ensure_runtime_state_file(self):
@@ -509,16 +536,6 @@ class AIVentilacijaMain(hass.Hass):
                 f"VENT: greska pri spremanju state filea {self.state_file_path}: {ex}",
                 level="WARNING",
             )
-
-    def load_yaml_file(self, filename):
-        path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", filename)
-        )
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return yaml.safe_load(f) or {}
-        except Exception:
-            return {}
 
     def log_h(self, message, level="INFO"):
         push_log_to_ha(self, message, level, self.log_sensor_entity, self.log_history_seconds, self.log_max_items)

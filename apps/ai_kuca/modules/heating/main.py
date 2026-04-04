@@ -8,18 +8,17 @@
 #
 
 import os
+import re
 from datetime import datetime
 import json
-import yaml
-import appdaemon.plugins.hass.hassapi as hass
+from ai_kuca.core.base_app import BaseApp
 from ai_kuca.core.logger import push_log_to_ha
 
 
-class AIHeatingMain(hass.Hass):
+class AIHeatingMain(BaseApp):
     def initialize(self):
-        self.version = "V2." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
+        self.init_base()
         system_cfg = self.load_system_config()
-        heating_cfg = system_cfg.get("heating_main", {})
         self.log_level = system_cfg.get("logging_level", "INFO")
         log_cfg = system_cfg.get("ai_kuca_log", {})
         log_map = system_cfg.get("ai_kuca_log_sensors", {})
@@ -28,6 +27,10 @@ class AIHeatingMain(hass.Hass):
         )
         self.log_history_seconds = int(log_cfg.get("history_seconds", 120))
         self.log_max_items = int(log_cfg.get("max_items", 50))
+        self.version = "V2." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
+        self.log_h(f"AI grijanje glavni {self.version} pokrenut", level="INFO")
+        system_cfg = self.load_system_config()
+        heating_cfg = system_cfg.get("heating_main", {})
 
         self.active_switch = heating_cfg.get("active_switch")
         self.eco_switch = heating_cfg.get("eco_switch")
@@ -69,8 +72,13 @@ class AIHeatingMain(hass.Hass):
         self.min_room_temp = float(heating_cfg.get("min_room_temp", 8.0))
         self.eco_delta = float(heating_cfg.get("eco_delta", 2.0))
         self.initial_targets_applied = False
-        self.apply_initial_targets_on_start = bool(
-            heating_cfg.get("apply_initial_targets_on_start", False)
+        self.apply_initial_targets_on_start = self._coerce_bool(
+            heating_cfg.get("apply_initial_targets_on_start", False),
+            default=False,
+        )
+        self.reconcile_eco_targets_on_startup = self._coerce_bool(
+            heating_cfg.get("reconcile_eco_targets_on_startup", False),
+            default=False,
         )
         self.eco_state_file = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "..", "..", "config", "eco_state.json")
@@ -80,11 +88,7 @@ class AIHeatingMain(hass.Hass):
         self.overheat_prev = self.get_state(self.overheat_switch) == "on"
         self.eco_state_at_overheat_start = self.get_state(self.eco_switch)
 
-        config_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", "room_configs.yaml")
-        )
-        with open(config_path, "r", encoding="utf-8") as f:
-            self.room_configs = yaml.safe_load(f) or {}
+        self.room_configs = self.load_yaml_file("room_configs.yaml")
 
         self.listen_state(self.eco_changed, self.eco_switch)
         for ent in self.eco_sync_source_switches:
@@ -167,40 +171,8 @@ class AIHeatingMain(hass.Hass):
             )
             return
         self.persist_eco_state(new)
-
-        for room_name, room_info in self.room_configs.items():
-            climate_entity = room_info.get("climate")
-            if not climate_entity:
-                continue
-
-            current_target = self.as_float(
-                self.get_state(climate_entity, attribute="temperature"),
-                fallback=None,
-            )
-            if current_target is None:
-                self.log_h(f"ECO: ne mogu procitati cilj za {room_name}")
-                continue
-
-            if new == "on":
-                new_target = current_target - self.eco_delta
-            else:
-                new_target = current_target + self.eco_delta
-
-            new_target = self.clamp(new_target)
-            self.log_h(
-                f"ECO racun | soba={room_name} | trenutni={current_target:.1f} | novi={new_target:.1f}",
-                level="DEBUG",
-            )
-            self.log_h(
-                f"ECO: {room_name} -> {new_target:.1f}C (delta={self.eco_delta:+.1f})",
-                level="DEBUG",
-            )
-            self.call_service(
-                "climate/set_temperature",
-                entity_id=climate_entity,
-                temperature=round(new_target, 1),
-            )
-            self.log_h(f"{room_name}: ECO cilj -> {new_target:.1f}C")
+        delta = -self.eco_delta if new == "on" else self.eco_delta
+        self.apply_eco_delta_to_room_targets(delta, reason="eco_toggle")
 
     def eco_sync_source_changed(self, entity, attribute, old, new, kwargs):
         self.log_h(
@@ -250,33 +222,20 @@ class AIHeatingMain(hass.Hass):
             level="INFO",
         )
 
-        for room_name, room_info in self.room_configs.items():
-            climate_entity = room_info.get("climate")
-            if not climate_entity:
-                continue
-
-            current_target = self.as_float(
-                self.get_state(climate_entity, attribute="temperature"),
-                fallback=None,
-            )
-            if current_target is None:
-                continue
-
-            new_target = self.clamp(current_target + delta)
-            self.call_service(
-                "climate/set_temperature",
-                entity_id=climate_entity,
-                temperature=round(new_target, 1),
-            )
-            self.log_h(
-                f"ECO post-overheat | {room_name}: {current_target:.1f} -> {new_target:.1f}",
-                level="DEBUG",
-            )
+        self.apply_eco_delta_to_room_targets(delta, reason="post_overheat")
         self.persist_eco_state("on" if end_eco_on else "off")
 
     def reconcile_eco_on_startup(self):
         current_eco = self.get_state(self.eco_switch)
         if current_eco not in ("on", "off"):
+            return
+
+        if not self.reconcile_eco_targets_on_startup:
+            self.log_h(
+                "Startup ECO uskladivanje targeta je iskljuceno -> target_input ostaje netaknut",
+                level="DEBUG",
+            )
+            self.persist_eco_state(current_eco)
             return
 
         if self.eco_last_persisted_state in ("on", "off") and self.eco_last_persisted_state != current_eco:
@@ -285,26 +244,7 @@ class AIHeatingMain(hass.Hass):
                 f"Startup ECO sync | persisted={self.eco_last_persisted_state} -> current={current_eco} | delta={delta:+.1f}C",
                 level="INFO",
             )
-            for room_name, room_info in self.room_configs.items():
-                climate_entity = room_info.get("climate")
-                if not climate_entity:
-                    continue
-                current_target = self.as_float(
-                    self.get_state(climate_entity, attribute="temperature"),
-                    fallback=None,
-                )
-                if current_target is None:
-                    continue
-                new_target = self.clamp(current_target + delta)
-                self.call_service(
-                    "climate/set_temperature",
-                    entity_id=climate_entity,
-                    temperature=round(new_target, 1),
-                )
-                self.log_h(
-                    f"ECO startup-sync | {room_name}: {current_target:.1f} -> {new_target:.1f}",
-                    level="DEBUG",
-                )
+            self.apply_eco_delta_to_room_targets(delta, reason="startup_sync")
 
         self.persist_eco_state(current_eco)
 
@@ -342,10 +282,12 @@ class AIHeatingMain(hass.Hass):
                 f"Pocetni cilj | soba={room_name} | cilj={base_target:.1f}",
                 level="DEBUG",
             )
-            self.call_service(
-                "climate/set_temperature",
+            self.set_climate_target_guarded(
                 entity_id=climate_entity,
-                temperature=round(base_target, 1),
+                temperature=base_target,
+                owner="heating_main",
+                priority=30,
+                ttl_sec=180,
             )
             self.log_h(f"{room_name}: pocetni cilj -> {base_target:.1f}C")
 
@@ -358,7 +300,16 @@ class AIHeatingMain(hass.Hass):
         )
 
         if boiler_temp is None or outdoor_temp is None:
-            return self.system_enabled
+            self.ensure_required_sensors(
+                {
+                    "boiler_sensor": self.boiler_sensor,
+                    "outdoor_sensor": self.outdoor_sensor,
+                },
+                module_name="AIHeatingMain",
+                cooldown_sec=900,
+            )
+            self.system_enabled = False
+            return False
 
         if boiler_temp < 35.0 or outdoor_temp > 21.0:
             if self.system_enabled:
@@ -383,6 +334,58 @@ class AIHeatingMain(hass.Hass):
         value = max(value, self.min_room_temp)
         return value
 
+    def normalize_room_slug(self, room_name):
+        base = str(room_name or "").strip().lower().replace(" ", "_")
+        base = re.sub(r"[^a-z0-9_]", "", base)
+        return base or "room"
+
+    def room_target_helper_entity(self, room_name, room_info):
+        helper = room_info.get("target_input") if isinstance(room_info, dict) else None
+        if isinstance(helper, str) and helper:
+            return helper
+        return f"input_number.ai_kuca_target_{self.normalize_room_slug(room_name)}"
+
+    def get_room_target_value(self, room_name, room_info):
+        helper_entity = self.room_target_helper_entity(room_name, room_info)
+        helper_value = self.as_float(self.get_state(helper_entity), fallback=None)
+        if helper_value is not None:
+            return helper_entity, helper_value
+
+        cfg_target = self.as_float(room_info.get("target") if isinstance(room_info, dict) else None, fallback=None)
+        if cfg_target is not None:
+            return helper_entity, cfg_target
+
+        return helper_entity, None
+
+    def apply_eco_delta_to_room_targets(self, delta, reason="eco"):
+        for room_name, room_info in self.room_configs.items():
+            helper_entity, current_target = self.get_room_target_value(room_name, room_info)
+            if current_target is None:
+                self.log_h(f"ECO {reason}: ne mogu procitati target helper za {room_name}", level="WARNING")
+                continue
+
+            if self.get_state(helper_entity) is None:
+                self.log_h(f"ECO {reason}: helper ne postoji za {room_name} ({helper_entity})", level="WARNING")
+                continue
+
+            new_target = self.clamp(current_target + delta)
+            self.log_h(
+                f"ECO {reason} | soba={room_name} | helper={helper_entity} | trenutni={current_target:.1f} | novi={new_target:.1f}",
+                level="DEBUG",
+            )
+            try:
+                self.call_service(
+                    "input_number/set_value",
+                    entity_id=helper_entity,
+                    value=round(new_target, 1),
+                )
+                self.log_h(f"{room_name}: ECO target_input -> {new_target:.1f}C", level="INFO")
+            except Exception as ex:
+                self.log_h(
+                    f"ECO {reason}: neuspjesno postavljanje helpera za {room_name} ({ex})",
+                    level="WARNING",
+                )
+
     def get_temp(self, entity):
         try:
             val = self.get_state(entity)
@@ -402,19 +405,6 @@ class AIHeatingMain(hass.Hass):
             return None
         return sum(values) / len(values)
 
-    def load_system_config(self):
-        return self.load_yaml_file("system_configs.yaml")
-
-    def load_yaml_file(self, filename):
-        path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", filename)
-        )
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return yaml.safe_load(f) or {}
-        except Exception:
-            return {}
-
     def as_float(self, value, fallback=None):
         try:
             if value in (None, "unknown", "unavailable"):
@@ -422,6 +412,21 @@ class AIHeatingMain(hass.Hass):
             return float(value)
         except Exception:
             return fallback
+
+    def _coerce_bool(self, value, default=False):
+        if isinstance(value, bool):
+            return value
+        if value is None:
+            return default
+        if isinstance(value, (int, float)):
+            return value != 0
+        if isinstance(value, str):
+            text = value.strip().lower()
+            if text in ("1", "true", "yes", "y", "on"):
+                return True
+            if text in ("0", "false", "no", "n", "off", ""):
+                return False
+        return default
 
     def log_h(self, message, level="INFO"):
         push_log_to_ha(self, message, level, self.log_sensor_entity, self.log_history_seconds, self.log_max_items)

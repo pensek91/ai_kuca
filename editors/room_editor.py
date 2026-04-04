@@ -6,6 +6,7 @@ import json
 import urllib.error
 import urllib.request
 from pathlib import Path
+import re
 
 # --- NOVO: automatska detekcija root foldera projekta ---
 def find_project_root(start: Path) -> Path:
@@ -20,6 +21,7 @@ def find_project_root(start: Path) -> Path:
 
 ROOT = find_project_root(Path(__file__).parent)
 ROOMS_YAML = ROOT / "apps" / "ai_kuca" / "config" / "room_configs.yaml"
+HA_HELPERS_YAML = ROOT / "HA_datoteke" / "ha_helpers.yaml"
 ENV_FILE = ROOT / ".env"
 
 
@@ -227,6 +229,51 @@ def normalize_room_name(name: str) -> str:
     return name.strip().lower().replace(" ", "_")
 
 
+def room_target_helper_entity(room_name: str) -> str:
+    slug = re.sub(r"[^a-z0-9_]", "", normalize_room_name(room_name)) or "room"
+    return f"input_number.ai_kuca_target_{slug}"
+
+
+def room_target_helper_key(room_name: str) -> str:
+    return room_target_helper_entity(room_name).split(".", 1)[1]
+
+
+def room_target_helper_name(room_name: str) -> str:
+    pretty = normalize_room_name(room_name).replace("_", " ").title()
+    return f"AI Kuca Target {pretty}"
+
+
+def sync_room_target_helpers_yaml(rooms: dict):
+    if not HA_HELPERS_YAML.exists():
+        return
+
+    data = load_yaml(HA_HELPERS_YAML)
+    input_numbers = data.get("input_number") if isinstance(data.get("input_number"), dict) else {}
+
+    managed_keys = {k for k in input_numbers.keys() if str(k).startswith("ai_kuca_target_")}
+    wanted_keys = set()
+
+    for room_name, room_cfg in (rooms or {}).items():
+        key = room_target_helper_key(room_name)
+        wanted_keys.add(key)
+        existing = input_numbers.get(key, {}) if isinstance(input_numbers.get(key), dict) else {}
+        helper_cfg = {
+            "name": existing.get("name") or room_target_helper_name(room_name),
+            "min": existing.get("min", 8),
+            "max": existing.get("max", 35),
+            "step": existing.get("step", 0.5),
+            "unit_of_measurement": existing.get("unit_of_measurement", "°C"),
+        }
+        # Bez 'initial' da HA nakon restarta vrati zadnju poznatu vrijednost helpera.
+        input_numbers[key] = helper_cfg
+
+    for stale in sorted(managed_keys - wanted_keys):
+        input_numbers.pop(stale, None)
+
+    data["input_number"] = input_numbers
+    save_yaml(HA_HELPERS_YAML, data)
+
+
 def preview_rooms(rooms: dict):
     print("\n--- Pregled room_configs.yaml ---")
     if not rooms:
@@ -275,6 +322,8 @@ def edit_predictive_params(room: dict):
 def edit_room(room_name: str, room: dict, client: HAClient | None = None) -> dict:
     room = dict(room or {})
     print(f"\nUredivanje sobe: {room_name}")
+
+    room["target_input"] = room_target_helper_entity(room_name)
 
     room["climate"] = ask_entity(
         "Klima/radijator entitet (opcionalno; za grijanje)",
@@ -436,6 +485,7 @@ def main():
 
         elif choice == "6":
             save_yaml(ROOMS_YAML, rooms)
+            sync_room_target_helpers_yaml(rooms)
             print(f"Spremljeno: {ROOMS_YAML}")
             break
 

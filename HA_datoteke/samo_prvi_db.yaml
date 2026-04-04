@@ -1,0 +1,2231 @@
+type: sections
+max_columns: 1
+title: Pec
+path: control-pec
+sections:
+  - type: grid
+    cards:
+      - type: heading
+        heading_style: title
+        heading: Informacije -> Peć
+        icon: mdi:gas-burner
+      - type: tile
+        entity: switch.security_miniserver_switch_2
+        color: red
+        show_entity_picture: false
+        hide_state: false
+        state_content:
+          - last_changed
+          - state
+        vertical: false
+        features_position: bottom
+      - type: tile
+        entity: siren.security_miniserver_switch_3
+        color: red
+        state_content:
+          - last_changed
+          - state
+        vertical: false
+        features_position: bottom
+      - type: picture-elements
+        elements:
+          - type: state-icon
+            style:
+              left: 50.25%
+              top: 50%
+            entity: switch.pumpa_grijanja
+            state_color: true
+            icon: mdi:pipe-valve
+            title: Pumpa grijanja
+            tap_action:
+              action: none
+          - type: state-label
+            style:
+              left: 42%
+              top: 8%
+            title: Preporucena temperatura
+            entity: sensor.ai_recommended_flow_temperature
+            tap_action:
+              action: none
+          - type: state-label
+            entity: sensor.cm_pelet_set_boiler_temperature
+            style:
+              left: 11%
+              top: 7%
+            title: Temperatura kotla
+            tap_action:
+              action: none
+          - type: state-label
+            entity: sensor.cm_pelet_set_circuit_1_flow_measured_temperature
+            style:
+              left: 42%
+              top: 28%
+            title: Temperatura polaznog voda - radijatori
+            tap_action:
+              action: none
+          - type: state-label
+            entity: sensor.cm_pelet_set_circuit_2_flow_measured_temperature
+            style:
+              left: 65%
+              top: 25%
+            title: Temperatura povratnog voda - radijatori
+            tap_action:
+              action: none
+          - type: state-label
+            entity: sensor.cm_pelet_set_buffer_tank_up
+            style:
+              left: 51%
+              top: 93%
+            title: Temperatura povrata - kotao
+            tap_action:
+              action: none
+          - type: state-label
+            entity: sensor.cm_pelet_set_outdoor_temperature
+            style:
+              left: 91%
+              top: 14%
+            title: Vanjska temperatura
+            tap_action:
+              action: none
+          - type: state-label
+            entity: switch.cm_pelet_set_boiler_switch
+            style:
+              left: 94%
+              top: 70%
+            title: Sklopka pelet seta
+            tap_action:
+              action: none
+            hold_action:
+              action: none
+          - type: state-label
+            entity: sensor.cm_pelet_set_heater_fan_state
+            style:
+              left: 25%
+              top: 73%
+            title: Brzina ventilatora
+            tap_action:
+              action: none
+          - type: state-label
+            entity: sensor.cm_pelet_set_b_tptv1
+            style:
+              left: 67%
+              top: 85%
+            suffix: °C
+            title: Temperatura spremnika tople vode
+            tap_action:
+              action: none
+          - type: state-label
+            entity: sensor.cm_pelet_set_b_puz
+            style:
+              left: 30.5%
+              top: 24.5%
+            title: Puz - status
+            tap_action:
+              action: none
+          - type: state-label
+            style:
+              left: 65%
+              top: 8%
+            entity: sensor.cm_pelet_set_circuit_1_flow_target_temperature
+            tap_action:
+              action: none
+          - type: state-icon
+            style:
+              left: 94%
+              top: 87%
+            entity: switch.cm_pelet_set_boiler_switch
+          - type: icon
+            style:
+              left: 91%
+              top: 5%
+            icon: mdi:sun-thermometer
+            tap_action:
+              action: none
+            hold_action:
+              action: none
+          - type: icon
+            style:
+              left: 67%
+              top: 68%
+            icon: mdi:hand-water
+            tap_action:
+              action: none
+            hold_action:
+              action: none
+          - type: state-label
+            style:
+              left: 91%
+              top: 21%
+            entity: sensor.temperatura_vani
+        grid_options:
+          columns: full
+          rows: auto
+        image:
+          media_content_id: media-source://image_upload/2c6c993ea8e984dbdf223ee72e986420
+          media_content_type: image/jpeg
+          metadata:
+            title: original.jpg
+            thumbnail: /api/image/serve/2c6c993ea8e984dbdf223ee72e986420/256x256
+            media_class: image
+            navigateIds:
+              - {}
+              - media_content_type: app
+                media_content_id: media-source://image_upload
+      - type: vertical-stack
+        cards:
+          - type: custom:mushroom-title-card
+            title: AI Heating Mobile+
+            subtitle: Conditional prikaz po stanju sistema
+          - type: custom:mushroom-chips-card
+            chips:
+              - type: entity
+                entity: sensor.cm_pelet_set_boiler_temperature
+                name: Kotao
+                icon: mdi:fire
+                icon_color: red
+              - type: entity
+                entity: sensor.cm_pelet_set_circuit_1_flow_measured_temperature
+                name: Flow
+                icon: mdi:thermometer-lines
+                icon_color: orange
+              - type: entity
+                entity: sensor.ai_recommended_flow_temperature
+                name: AI Flow
+                icon: mdi:target
+              - type: entity
+                entity: switch.pumpa_grijanja
+                name: Pumpa
+                icon: mdi:pump
+              - type: entity
+                entity: input_boolean.overheat_active
+                name: Overheat
+                icon: mdi:alert
+              - type: entity
+                entity: input_boolean.grijanje_na_pelet
+                name: Grijanje na pelet
+                icon: mdi:fire
+              - type: entity
+                entity: input_boolean.zagrijavanje_sanitarne_vode
+                name: Zagrijavanje sanitarne vode
+                icon: mdi:water-boiler-auto
+                use_entity_picture: false
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_status
+            primary: Status AI_KUCA
+            secondary: |
+              {{ states('sensor.ai_kuca_log_status') }}
+            icon: mdi:check-decagram
+            color: green
+            features_position: bottom
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:mushroom-entity-card
+                entity: input_boolean.ai_heating_active
+                name: AI Heating
+                icon: mdi:home-thermometer
+              - type: custom:mushroom-entity-card
+                entity: input_boolean.ai_heating_eco
+                name: ECO Mode
+                icon: mdi:leaf
+              - type: custom:mushroom-entity-card
+                entity: input_select.ai_kuca_boost_select
+                name: Boost soba
+                icon: mdi:target
+              - type: custom:mushroom-entity-card
+                entity: input_select.ai_kuca_duration_select
+                name: Trajanje
+                icon: mdi:timer
+          - type: conditional
+            conditions:
+              - entity: input_boolean.overheat_active
+                state: "on"
+            card:
+              type: custom:mushroom-template-card
+              primary: OVERHEAT AKTIVAN
+              secondary: Sigurnosni režim je uključen. Provjeri kotao, pumpu i ventil.
+              icon: mdi:alert-octagon
+              multiline_secondary: true
+              tap_action:
+                action: more-info
+              entity: input_boolean.overheat_active
+              color: red
+              features_position: bottom
+          - type: conditional
+            conditions:
+              - entity: input_boolean.ai_heating_eco
+                state: "on"
+            card:
+              type: custom:mushroom-template-card
+              primary: ECO je aktivan
+              secondary: Targeti su spušteni za 2°C relativno na trenutne vrijednosti.
+              icon: mdi:leaf
+              entity: input_boolean.ai_heating_eco
+              color: green
+              features_position: bottom
+          - type: conditional
+            conditions:
+              - condition: state
+                entity: input_boolean.grijanje_na_pelet
+                state: "on"
+            card:
+              type: custom:mushroom-template-card
+              primary: Grijanje na pelet je aktivno
+              icon: mdi:fire
+              entity: input_boolean.grijanje_na_pelet
+              color: orange
+              features_position: bottom
+              secondary: Automatsko grijanje na pelet
+          - type: conditional
+            conditions:
+              - condition: state
+                entity: input_boolean.zagrijavanje_sanitarne_vode
+                state: "on"
+            card:
+              type: custom:mushroom-template-card
+              primary: Zagrijavanje sanitarne vode
+              icon: mdi:water-boiler-auto
+              entity: input_boolean.zagrijavanje_sanitarne_vode
+              color: orange
+              features_position: bottom
+              secondary: Jednokratno grijanje boilera > 55°C
+          - type: conditional
+            conditions:
+              - entity: switch.pumpa_grijanja
+                state: "on"
+            card:
+              type: vertical-stack
+              cards:
+                - type: custom:mushroom-title-card
+                  title: Pumpa/ventil detalji (Pumpa ON)
+                - type: grid
+                  columns: 2
+                  square: false
+                  cards:
+                    - type: custom:mushroom-entity-card
+                      entity: switch.pumpa_grijanja
+                      name: Pumpa
+                      icon: mdi:pump
+                    - type: custom:mushroom-entity-card
+                      entity: input_boolean.mis_ventil_pauza
+                      name: Ventil pauza
+                      icon: mdi:pause-circle
+                    - type: custom:mushroom-entity-card
+                      entity: switch.otvaranje_mis_ventila
+                      name: Otvaranje
+                      icon: mdi:valve-open
+                    - type: custom:mushroom-entity-card
+                      entity: switch.zatvaranje_mis_ventila
+                      name: Zatvaranje
+                      icon: mdi:valve-closed
+          - type: conditional
+            conditions:
+              - entity: switch.pumpa_grijanja
+                state: "off"
+            card:
+              type: custom:mushroom-template-card
+              primary: Pumpa je OFF
+              secondary: Ventil detalji su skriveni dok pumpa ne radi.
+              icon: mdi:pump-off
+              icon_color: grey
+              entity: switch.pumpa_grijanja
+          - type: custom:mushroom-title-card
+            title: Temperature po sobama
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:button-card
+                entity: input_number.ai_kuca_target_dnevna
+                name: Dnevna
+                show_icon: false
+                show_state: false
+                custom_fields:
+                  humidity: >-
+                    [[[ return `Vlaga ${states['sensor.vlaznost_dnevna']?.state
+                    ?? '--'}%`; ]]]
+                  current: >-
+                    [[[ return `${states['sensor.temperatura_dnevna']?.state ??
+                    '--'}°C`; ]]]
+                  target: "[[[ return `${entity?.state ?? '--'}°C`; ]]]"
+                  minus:
+                    card:
+                      type: custom:button-card
+                      icon: mdi:minus
+                      tap_action:
+                        action: call-service
+                        service: input_number.decrement
+                        target:
+                          entity_id: input_number.ai_kuca_target_dnevna
+                      styles:
+                        card:
+                          - border-radius: 999px
+                          - width: 42px
+                          - height: 42px
+                          - background: rgba(255,255,255,0.12)
+                        icon:
+                          - color: white
+                  plus:
+                    card:
+                      type: custom:button-card
+                      icon: mdi:plus
+                      tap_action:
+                        action: call-service
+                        service: input_number.increment
+                        target:
+                          entity_id: input_number.ai_kuca_target_dnevna
+                      styles:
+                        card:
+                          - border-radius: 999px
+                          - width: 42px
+                          - height: 42px
+                          - background: rgba(255,255,255,0.12)
+                        icon:
+                          - color: white
+                styles:
+                  card:
+                    - border-radius: 50%
+                    - aspect-ratio: 1 / 1
+                    - padding: 16px
+                    - background: |
+                        [[[
+                          const t = parseFloat(entity?.state);
+                          const min = parseFloat(entity?.attributes?.min ?? 8);
+                          const max = parseFloat(entity?.attributes?.max ?? 35);
+                          if (isNaN(t) || isNaN(min) || isNaN(max) || max <= min) {
+                            return 'radial-gradient(circle at 35% 25%, #3f5f7a, #1f2f44)';
+                          }
+                          const pct = Math.min(100, Math.max(0, ((t - min) / (max - min)) * 100));
+                          const arcPct = pct * 0.70;
+                          const current = parseFloat(states['sensor.temperatura_dnevna']?.state);
+                          const humidity = parseFloat(states['sensor.vlaznost_dnevna']?.state);
+                          const humidityPct = Math.min(100, Math.max(0, isNaN(humidity) ? 0 : humidity));
+                          let humidityColor = '#f6c200';
+                          if (humidityPct <= 60 && humidityPct >= 40) humidityColor = '#8bcf8b';
+                          else if (humidityPct > 60 && humidityPct <= 70) humidityColor = '#1f4f8f';
+                          else if (humidityPct > 70) humidityColor = '#e74c3c';
+                          const delta = isNaN(current) ? 0 : t - current;
+                          const ringColor = Math.abs(delta) <= 0.6 ? '#81c784' : (delta < 0.6 ? '#4fc3f7' : '#ffb74d');
+                          const humidityRadius = Math.max(0, Math.min(80, humidityPct * 0.8));
+                          return `radial-gradient(circle, transparent 0 94%, #2a3d52 94% 100%), radial-gradient(circle, ${humidityColor}b3 0 ${humidityRadius}%, rgba(0,0,0,0) ${humidityRadius + 1.4}% 100%) center / 80% 80% no-repeat, radial-gradient(circle, #2a3d52 0 58.1%, transparent 58.2% 70%, #2a3d52 70.1% 100%), conic-gradient(from 234deg, ${ringColor} 0 ${arcPct}%, rgba(255,255,255,0.2) ${arcPct}% 70%, transparent 70% 100%), radial-gradient(circle at 35% 25%, #3f5f7a, #1f2f44)`;
+                        ]]]
+                    - border: |
+                        [[[
+                          const current = parseFloat(states['sensor.temperatura_dnevna']?.state);
+                          const target = parseFloat(entity?.state);
+                          if (isNaN(current) || isNaN(target)) return '2px solid rgba(255,255,255,0.2)';
+                          const delta = target - current;
+                          if (delta > 0.6) return '3px solid #4fc3f7';
+                          if (delta < -0.6) return '3px solid #ffb74d';
+                          return '3px solid #81c784';
+                        ]]]
+                    - box-shadow: |
+                        [[[
+                          const current = parseFloat(states['sensor.temperatura_dnevna']?.state);
+                          const target = parseFloat(entity?.state);
+                          if (isNaN(current) || isNaN(target)) return '0 0 0 rgba(0,0,0,0)';
+                          const delta = target - current;
+                          if (delta > 0.6) return '0 0 18px rgba(79,195,247,0.45)';
+                          if (delta < -0.6) return '0 0 18px rgba(255,183,77,0.45)';
+                          return '0 0 16px rgba(129,199,132,0.42)';
+                        ]]]
+                    - transition: border 0.25s ease, box-shadow 0.25s ease
+                  grid:
+                    - grid-template-areas: >-
+                        "n n" "humidity humidity" "current current" "target
+                        target" "minus plus"
+                    - grid-template-columns: 1fr 1fr
+                    - grid-template-rows: min-content min-content 1fr min-content min-content
+                  name:
+                    - color: white
+                    - font-weight: 700
+                    - font-size: 15px
+                    - justify-self: center
+                    - align-self: end
+                    - transform: translateY(8px)
+                  custom_fields:
+                    humidity:
+                      - color: rgba(181,232,255,0.92)
+                      - font-size: 12px
+                      - font-weight: 600
+                      - justify-self: center
+                      - align-self: end
+                      - transform: translateY(6px)
+                    current:
+                      - color: "#8ee7ff"
+                      - font-size: 28px
+                      - font-weight: 700
+                      - justify-self: center
+                      - align-self: center
+                    target:
+                      - color: rgba(255,255,255,0.85)
+                      - font-size: 17px
+                      - font-weight: 650
+                      - justify-self: center
+                      - align-self: start
+                      - transform: translateY(-4px)
+                    minus:
+                      - justify-self: center
+                      - align-self: end
+                    plus:
+                      - justify-self: center
+                      - align-self: end
+              - type: custom:button-card
+                entity: input_number.ai_kuca_target_spavaca
+                name: Spavaća
+                show_icon: false
+                show_state: false
+                custom_fields:
+                  humidity: >-
+                    [[[ return `Vlaga ${states['sensor.vlaznost_spavaca']?.state
+                    ?? '--'}%`; ]]]
+                  current: >-
+                    [[[ return `${states['sensor.temperatura_spavaca']?.state ??
+                    '--'}°C`; ]]]
+                  target: "[[[ return `${entity?.state ?? '--'}°C`; ]]]"
+                  minus:
+                    card:
+                      type: custom:button-card
+                      icon: mdi:minus
+                      tap_action:
+                        action: call-service
+                        service: input_number.decrement
+                        target:
+                          entity_id: input_number.ai_kuca_target_spavaca
+                      styles:
+                        card:
+                          - border-radius: 999px
+                          - width: 42px
+                          - height: 42px
+                          - background: rgba(255,255,255,0.12)
+                        icon:
+                          - color: white
+                  plus:
+                    card:
+                      type: custom:button-card
+                      icon: mdi:plus
+                      tap_action:
+                        action: call-service
+                        service: input_number.increment
+                        target:
+                          entity_id: input_number.ai_kuca_target_spavaca
+                      styles:
+                        card:
+                          - border-radius: 999px
+                          - width: 42px
+                          - height: 42px
+                          - background: rgba(255,255,255,0.12)
+                        icon:
+                          - color: white
+                styles:
+                  card:
+                    - border-radius: 50%
+                    - aspect-ratio: 1 / 1
+                    - padding: 16px
+                    - background: |
+                        [[[
+                          const t = parseFloat(entity?.state);
+                          const min = parseFloat(entity?.attributes?.min ?? 8);
+                          const max = parseFloat(entity?.attributes?.max ?? 35);
+                          if (isNaN(t) || isNaN(min) || isNaN(max) || max <= min) {
+                            return 'radial-gradient(circle at 35% 25%, #3f5f7a, #1f2f44)';
+                          }
+                          const pct = Math.min(100, Math.max(0, ((t - min) / (max - min)) * 100));
+                          const arcPct = pct * 0.70;
+                          const current = parseFloat(states['sensor.temperatura_spavaca']?.state);
+                          const humidity = parseFloat(states['sensor.vlaznost_spavaca']?.state);
+                          const humidityPct = Math.min(100, Math.max(0, isNaN(humidity) ? 0 : humidity));
+                          let humidityColor = '#f6c200';
+                          if (humidityPct <= 60 && humidityPct >= 40) humidityColor = '#8bcf8b';
+                          else if (humidityPct > 60 && humidityPct <= 70) humidityColor = '#1f4f8f';
+                          else if (humidityPct > 70) humidityColor = '#e74c3c';
+                          const delta = isNaN(current) ? 0 : t - current;
+                          const ringColor = Math.abs(delta) <= 0.6 ? '#81c784' : (delta < 0.6 ? '#4fc3f7' : '#ffb74d');
+                          const humidityRadius = Math.max(0, Math.min(80, humidityPct * 0.8));
+                          return `radial-gradient(circle, transparent 0 94%, #2a3d52 94% 100%), radial-gradient(circle, ${humidityColor}b3 0 ${humidityRadius}%, rgba(0,0,0,0) ${humidityRadius + 1.4}% 100%) center / 80% 80% no-repeat, radial-gradient(circle, #2a3d52 0 58.1%, transparent 58.2% 70%, #2a3d52 70.1% 100%), conic-gradient(from 234deg, ${ringColor} 0 ${arcPct}%, rgba(255,255,255,0.2) ${arcPct}% 70%, transparent 70% 100%), radial-gradient(circle at 35% 25%, #3f5f7a, #1f2f44)`;
+                        ]]]
+                    - border: |
+                        [[[
+                          const current = parseFloat(states['sensor.temperatura_spavaca']?.state);
+                          const target = parseFloat(entity?.state);
+                          if (isNaN(current) || isNaN(target)) return '2px solid rgba(255,255,255,0.2)';
+                          const delta = target - current;
+                          if (delta > 0.6) return '3px solid #4fc3f7';
+                          if (delta < -0.6) return '3px solid #ffb74d';
+                          return '3px solid #81c784';
+                        ]]]
+                    - box-shadow: |
+                        [[[
+                          const current = parseFloat(states['sensor.temperatura_spavaca']?.state);
+                          const target = parseFloat(entity?.state);
+                          if (isNaN(current) || isNaN(target)) return '0 0 0 rgba(0,0,0,0)';
+                          const delta = target - current;
+                          if (delta > 0.6) return '0 0 18px rgba(79,195,247,0.45)';
+                          if (delta < -0.6) return '0 0 18px rgba(255,183,77,0.45)';
+                          return '0 0 16px rgba(129,199,132,0.42)';
+                        ]]]
+                    - transition: border 0.25s ease, box-shadow 0.25s ease
+                  grid:
+                    - grid-template-areas: >-
+                        "n n" "humidity humidity" "current current" "target
+                        target" "minus plus"
+                    - grid-template-columns: 1fr 1fr
+                    - grid-template-rows: min-content min-content 1fr min-content min-content
+                  name:
+                    - color: white
+                    - font-weight: 700
+                    - font-size: 15px
+                    - justify-self: center
+                    - align-self: end
+                    - transform: translateY(8px)
+                  custom_fields:
+                    humidity:
+                      - color: rgba(181,232,255,0.92)
+                      - font-size: 12px
+                      - font-weight: 600
+                      - justify-self: center
+                      - align-self: end
+                      - transform: translateY(6px)
+                    current:
+                      - color: "#8ee7ff"
+                      - font-size: 28px
+                      - font-weight: 700
+                      - justify-self: center
+                      - align-self: center
+                    target:
+                      - color: rgba(255,255,255,0.85)
+                      - font-size: 17px
+                      - font-weight: 650
+                      - justify-self: center
+                      - align-self: start
+                      - transform: translateY(-4px)
+                    minus:
+                      - justify-self: center
+                      - align-self: end
+                    plus:
+                      - justify-self: center
+                      - align-self: end
+              - type: custom:button-card
+                entity: input_number.ai_kuca_target_kupaona
+                name: Kupaona
+                show_icon: false
+                show_state: false
+                custom_fields:
+                  humidity: >-
+                    [[[ return `Vlaga ${states['sensor.vlaznost_kupaona']?.state
+                    ?? '--'}%`; ]]]
+                  current: >-
+                    [[[ return `${states['sensor.temperatura_kupaona']?.state ??
+                    '--'}°C`; ]]]
+                  target: "[[[ return `${entity?.state ?? '--'}°C`; ]]]"
+                  minus:
+                    card:
+                      type: custom:button-card
+                      icon: mdi:minus
+                      tap_action:
+                        action: call-service
+                        service: input_number.decrement
+                        target:
+                          entity_id: input_number.ai_kuca_target_kupaona
+                      styles:
+                        card:
+                          - border-radius: 999px
+                          - width: 42px
+                          - height: 42px
+                          - background: rgba(255,255,255,0.12)
+                        icon:
+                          - color: white
+                  plus:
+                    card:
+                      type: custom:button-card
+                      icon: mdi:plus
+                      tap_action:
+                        action: call-service
+                        service: input_number.increment
+                        target:
+                          entity_id: input_number.ai_kuca_target_kupaona
+                      styles:
+                        card:
+                          - border-radius: 999px
+                          - width: 42px
+                          - height: 42px
+                          - background: rgba(255,255,255,0.12)
+                        icon:
+                          - color: white
+                styles:
+                  card:
+                    - border-radius: 50%
+                    - aspect-ratio: 1 / 1
+                    - padding: 16px
+                    - background: |
+                        [[[
+                          const t = parseFloat(entity?.state);
+                          const min = parseFloat(entity?.attributes?.min ?? 8);
+                          const max = parseFloat(entity?.attributes?.max ?? 35);
+                          if (isNaN(t) || isNaN(min) || isNaN(max) || max <= min) {
+                            return 'radial-gradient(circle at 35% 25%, #3f5f7a, #1f2f44)';
+                          }
+                          const pct = Math.min(100, Math.max(0, ((t - min) / (max - min)) * 100));
+                          const arcPct = pct * 0.70;
+                          const current = parseFloat(states['sensor.temperatura_kupaona']?.state);
+                          const humidity = parseFloat(states['sensor.vlaznost_kupaona']?.state);
+                          const humidityPct = Math.min(100, Math.max(0, isNaN(humidity) ? 0 : humidity));
+                          let humidityColor = '#f6c200';
+                          if (humidityPct <= 70 && humidityPct >= 45) humidityColor = '#8bcf8b';
+                          else if (humidityPct > 70 && humidityPct <= 75) humidityColor = '#1f4f8f';
+                          else if (humidityPct > 75) humidityColor = '#e74c3c';
+                          const delta = isNaN(current) ? 0 : t - current;
+                          const ringColor = Math.abs(delta) <= 0.6 ? '#81c784' : (delta < 0.6 ? '#4fc3f7' : '#ffb74d');
+                          const humidityRadius = Math.max(0, Math.min(80, humidityPct * 0.8));
+                          return `radial-gradient(circle, transparent 0 94%, #2a3d52 94% 100%), radial-gradient(circle, ${humidityColor}b3 0 ${humidityRadius}%, rgba(0,0,0,0) ${humidityRadius + 1.4}% 100%) center / 80% 80% no-repeat, radial-gradient(circle, #2a3d52 0 58.1%, transparent 58.2% 70%, #2a3d52 70.1% 100%), conic-gradient(from 234deg, ${ringColor} 0 ${arcPct}%, rgba(255,255,255,0.2) ${arcPct}% 70%, transparent 70% 100%), radial-gradient(circle at 35% 25%, #3f5f7a, #1f2f44)`;
+                        ]]]
+                    - border: |
+                        [[[
+                          const current = parseFloat(states['sensor.temperatura_kupaona']?.state);
+                          const target = parseFloat(entity?.state);
+                          if (isNaN(current) || isNaN(target)) return '2px solid rgba(255,255,255,0.2)';
+                          const delta = target - current;
+                          if (delta > 0.6) return '3px solid #4fc3f7';
+                          if (delta < -0.6) return '3px solid #ffb74d';
+                          return '3px solid #81c784';
+                        ]]]
+                    - box-shadow: |
+                        [[[
+                          const current = parseFloat(states['sensor.temperatura_kupaona']?.state);
+                          const target = parseFloat(entity?.state);
+                          if (isNaN(current) || isNaN(target)) return '0 0 0 rgba(0,0,0,0)';
+                          const delta = target - current;
+                          if (delta > 0.6) return '0 0 18px rgba(79,195,247,0.45)';
+                          if (delta < -0.6) return '0 0 18px rgba(255,183,77,0.45)';
+                          return '0 0 16px rgba(129,199,132,0.42)';
+                        ]]]
+                    - transition: border 0.25s ease, box-shadow 0.25s ease
+                  grid:
+                    - grid-template-areas: >-
+                        "n n" "humidity humidity" "current current" "target
+                        target" "minus plus"
+                    - grid-template-columns: 1fr 1fr
+                    - grid-template-rows: min-content min-content 1fr min-content min-content
+                  name:
+                    - color: white
+                    - font-weight: 700
+                    - font-size: 15px
+                    - justify-self: center
+                    - align-self: end
+                    - transform: translateY(8px)
+                  custom_fields:
+                    humidity:
+                      - color: rgba(181,232,255,0.92)
+                      - font-size: 12px
+                      - font-weight: 600
+                      - justify-self: center
+                      - align-self: end
+                      - transform: translateY(6px)
+                    current:
+                      - color: "#8ee7ff"
+                      - font-size: 28px
+                      - font-weight: 700
+                      - justify-self: center
+                      - align-self: center
+                    target:
+                      - color: rgba(255,255,255,0.85)
+                      - font-size: 17px
+                      - font-weight: 650
+                      - justify-self: center
+                      - align-self: start
+                      - transform: translateY(-4px)
+                    minus:
+                      - justify-self: center
+                      - align-self: end
+                    plus:
+                      - justify-self: center
+                      - align-self: end
+              - type: custom:button-card
+                entity: input_number.ai_kuca_target_tia
+                name: Tia
+                show_icon: false
+                show_state: false
+                custom_fields:
+                  humidity: >-
+                    [[[ return `Vlaga ${states['sensor.vlaznost_tia']?.state ??
+                    '--'}%`; ]]]
+                  current: >-
+                    [[[ return `${states['sensor.temperatura_tia']?.state ??
+                    '--'}°C`; ]]]
+                  target: "[[[ return `${entity?.state ?? '--'}°C`; ]]]"
+                  minus:
+                    card:
+                      type: custom:button-card
+                      icon: mdi:minus
+                      tap_action:
+                        action: call-service
+                        service: input_number.decrement
+                        target:
+                          entity_id: input_number.ai_kuca_target_tia
+                      styles:
+                        card:
+                          - border-radius: 999px
+                          - width: 42px
+                          - height: 42px
+                          - background: rgba(255,255,255,0.12)
+                        icon:
+                          - color: white
+                  plus:
+                    card:
+                      type: custom:button-card
+                      icon: mdi:plus
+                      tap_action:
+                        action: call-service
+                        service: input_number.increment
+                        target:
+                          entity_id: input_number.ai_kuca_target_tia
+                      styles:
+                        card:
+                          - border-radius: 999px
+                          - width: 42px
+                          - height: 42px
+                          - background: rgba(255,255,255,0.12)
+                        icon:
+                          - color: white
+                styles:
+                  card:
+                    - border-radius: 50%
+                    - aspect-ratio: 1 / 1
+                    - padding: 16px
+                    - background: |
+                        [[[
+                          const t = parseFloat(entity?.state);
+                          const min = parseFloat(entity?.attributes?.min ?? 8);
+                          const max = parseFloat(entity?.attributes?.max ?? 35);
+                          if (isNaN(t) || isNaN(min) || isNaN(max) || max <= min) {
+                            return 'radial-gradient(circle at 35% 25%, #3f5f7a, #1f2f44)';
+                          }
+                          const pct = Math.min(100, Math.max(0, ((t - min) / (max - min)) * 100));
+                          const arcPct = pct * 0.70;
+                          const current = parseFloat(states['sensor.temperatura_tia']?.state);
+                          const humidity = parseFloat(states['sensor.vlaznost_tia']?.state);
+                          const humidityPct = Math.min(100, Math.max(0, isNaN(humidity) ? 0 : humidity));
+                          let humidityColor = '#f6c200';
+                          if (humidityPct <= 60 && humidityPct >= 40) humidityColor = '#8bcf8b';
+                          else if (humidityPct > 60 && humidityPct <= 70) humidityColor = '#1f4f8f';
+                          else if (humidityPct > 70) humidityColor = '#e74c3c';
+                          const delta = isNaN(current) ? 0 : t - current;
+                          const ringColor = Math.abs(delta) <= 0.6 ? '#81c784' : (delta < 0.6 ? '#4fc3f7' : '#ffb74d');
+                          const humidityRadius = Math.max(0, Math.min(80, humidityPct * 0.8));
+                          return `radial-gradient(circle, transparent 0 94%, #2a3d52 94% 100%), radial-gradient(circle, ${humidityColor}b3 0 ${humidityRadius}%, rgba(0,0,0,0) ${humidityRadius + 1.4}% 100%) center / 80% 80% no-repeat, radial-gradient(circle, #2a3d52 0 58.1%, transparent 58.2% 70%, #2a3d52 70.1% 100%), conic-gradient(from 234deg, ${ringColor} 0 ${arcPct}%, rgba(255,255,255,0.2) ${arcPct}% 70%, transparent 70% 100%), radial-gradient(circle at 35% 25%, #3f5f7a, #1f2f44)`;
+                        ]]]
+                    - border: |
+                        [[[
+                          const current = parseFloat(states['sensor.temperatura_tia']?.state);
+                          const target = parseFloat(entity?.state);
+                          if (isNaN(current) || isNaN(target)) return '2px solid rgba(255,255,255,0.2)';
+                          const delta = target - current;
+                          if (delta > 0.6) return '3px solid #4fc3f7';
+                          if (delta < -0.6) return '3px solid #ffb74d';
+                          return '3px solid #81c784';
+                        ]]]
+                    - box-shadow: |
+                        [[[
+                          const current = parseFloat(states['sensor.temperatura_tia']?.state);
+                          const target = parseFloat(entity?.state);
+                          if (isNaN(current) || isNaN(target)) return '0 0 0 rgba(0,0,0,0)';
+                          const delta = target - current;
+                          if (delta > 0.6) return '0 0 18px rgba(79,195,247,0.45)';
+                          if (delta < -0.6) return '0 0 18px rgba(255,183,77,0.45)';
+                          return '0 0 16px rgba(129,199,132,0.42)';
+                        ]]]
+                    - transition: border 0.25s ease, box-shadow 0.25s ease
+                  grid:
+                    - grid-template-areas: >-
+                        "n n" "humidity humidity" "current current" "target
+                        target" "minus plus"
+                    - grid-template-columns: 1fr 1fr
+                    - grid-template-rows: min-content min-content 1fr min-content min-content
+                  name:
+                    - color: white
+                    - font-weight: 700
+                    - font-size: 15px
+                    - justify-self: center
+                    - align-self: end
+                    - transform: translateY(8px)
+                  custom_fields:
+                    humidity:
+                      - color: rgba(181,232,255,0.92)
+                      - font-size: 12px
+                      - font-weight: 600
+                      - justify-self: center
+                      - align-self: end
+                      - transform: translateY(6px)
+                    current:
+                      - color: "#8ee7ff"
+                      - font-size: 28px
+                      - font-weight: 700
+                      - justify-self: center
+                      - align-self: center
+                    target:
+                      - color: rgba(255,255,255,0.85)
+                      - font-size: 17px
+                      - font-weight: 650
+                      - justify-self: center
+                      - align-self: start
+                      - transform: translateY(-4px)
+                    minus:
+                      - justify-self: center
+                      - align-self: end
+                    plus:
+                      - justify-self: center
+                      - align-self: end
+              - type: custom:button-card
+                entity: input_number.ai_kuca_target_mali
+                name: Mali
+                show_icon: false
+                show_state: false
+                custom_fields:
+                  humidity: >-
+                    [[[ return `Vlaga ${states['sensor.vlaznost_hodnik']?.state
+                    ?? '--'}%`; ]]]
+                  current: >-
+                    [[[ return `${states['sensor.temperatura_hodnik']?.state ??
+                    '--'}°C`; ]]]
+                  target: "[[[ return `${entity?.state ?? '--'}°C`; ]]]"
+                  minus:
+                    card:
+                      type: custom:button-card
+                      icon: mdi:minus
+                      tap_action:
+                        action: call-service
+                        service: input_number.decrement
+                        target:
+                          entity_id: input_number.ai_kuca_target_mali
+                      styles:
+                        card:
+                          - border-radius: 999px
+                          - width: 42px
+                          - height: 42px
+                          - background: rgba(255,255,255,0.12)
+                        icon:
+                          - color: white
+                  plus:
+                    card:
+                      type: custom:button-card
+                      icon: mdi:plus
+                      tap_action:
+                        action: call-service
+                        service: input_number.increment
+                        target:
+                          entity_id: input_number.ai_kuca_target_mali
+                      styles:
+                        card:
+                          - border-radius: 999px
+                          - width: 42px
+                          - height: 42px
+                          - background: rgba(255,255,255,0.12)
+                        icon:
+                          - color: white
+                styles:
+                  card:
+                    - border-radius: 50%
+                    - aspect-ratio: 1 / 1
+                    - padding: 16px
+                    - background: |
+                        [[[
+                          const t = parseFloat(entity?.state);
+                          const min = parseFloat(entity?.attributes?.min ?? 8);
+                          const max = parseFloat(entity?.attributes?.max ?? 35);
+                          if (isNaN(t) || isNaN(min) || isNaN(max) || max <= min) {
+                            return 'radial-gradient(circle at 35% 25%, #3f5f7a, #1f2f44)';
+                          }
+                          const pct = Math.min(100, Math.max(0, ((t - min) / (max - min)) * 100));
+                          const arcPct = pct * 0.70;
+                          const current = parseFloat(states['sensor.temperatura_hodnik']?.state);
+                          const humidity = parseFloat(states['sensor.vlaznost_hodnik']?.state);
+                          const humidityPct = Math.min(100, Math.max(0, isNaN(humidity) ? 0 : humidity));
+                          let humidityColor = '#f6c200';
+                          if (humidityPct <= 60 && humidityPct >= 40) humidityColor = '#8bcf8b';
+                          else if (humidityPct > 60 && humidityPct <= 70) humidityColor = '#1f4f8f';
+                          else if (humidityPct > 70) humidityColor = '#e74c3c';
+                          const delta = isNaN(current) ? 0 : t - current;
+                          const ringColor = Math.abs(delta) <= 0.6 ? '#81c784' : (delta < 0.6 ? '#4fc3f7' : '#ffb74d');
+                          const humidityRadius = Math.max(0, Math.min(80, humidityPct * 0.8));
+                          return `radial-gradient(circle, transparent 0 94%, #2a3d52 94% 100%), radial-gradient(circle, ${humidityColor}b3 0 ${humidityRadius}%, rgba(0,0,0,0) ${humidityRadius + 1.4}% 100%) center / 80% 80% no-repeat, radial-gradient(circle, #2a3d52 0 58.1%, transparent 58.2% 70%, #2a3d52 70.1% 100%), conic-gradient(from 234deg, ${ringColor} 0 ${arcPct}%, rgba(255,255,255,0.2) ${arcPct}% 70%, transparent 70% 100%), radial-gradient(circle at 35% 25%, #3f5f7a, #1f2f44)`;
+                        ]]]
+                    - border: |
+                        [[[
+                          const current = parseFloat(states['sensor.temperatura_hodnik']?.state);
+                          const target = parseFloat(entity?.state);
+                          if (isNaN(current) || isNaN(target)) return '2px solid rgba(255,255,255,0.2)';
+                          const delta = target - current;
+                          if (delta > 0.6) return '3px solid #4fc3f7';
+                          if (delta < -0.6) return '3px solid #ffb74d';
+                          return '3px solid #81c784';
+                        ]]]
+                    - box-shadow: |
+                        [[[
+                          const current = parseFloat(states['sensor.temperatura_hodnik']?.state);
+                          const target = parseFloat(entity?.state);
+                          if (isNaN(current) || isNaN(target)) return '0 0 0 rgba(0,0,0,0)';
+                          const delta = target - current;
+                          if (delta > 0.6) return '0 0 18px rgba(79,195,247,0.45)';
+                          if (delta < -0.6) return '0 0 18px rgba(255,183,77,0.45)';
+                          return '0 0 16px rgba(129,199,132,0.42)';
+                        ]]]
+                    - transition: border 0.25s ease, box-shadow 0.25s ease
+                  grid:
+                    - grid-template-areas: >-
+                        "n n" "humidity humidity" "current current" "target
+                        target" "minus plus"
+                    - grid-template-columns: 1fr 1fr
+                    - grid-template-rows: min-content min-content 1fr min-content min-content
+                  name:
+                    - color: white
+                    - font-weight: 700
+                    - font-size: 15px
+                    - justify-self: center
+                    - align-self: end
+                    - transform: translateY(8px)
+                  custom_fields:
+                    humidity:
+                      - color: rgba(181,232,255,0.92)
+                      - font-size: 12px
+                      - font-weight: 600
+                      - justify-self: center
+                      - align-self: end
+                      - transform: translateY(6px)
+                    current:
+                      - color: "#8ee7ff"
+                      - font-size: 28px
+                      - font-weight: 700
+                      - justify-self: center
+                      - align-self: center
+                    target:
+                      - color: rgba(255,255,255,0.85)
+                      - font-size: 17px
+                      - font-weight: 650
+                      - justify-self: center
+                      - align-self: start
+                      - transform: translateY(-4px)
+                    minus:
+                      - justify-self: center
+                      - align-self: end
+                    plus:
+                      - justify-self: center
+                      - align-self: end
+              - type: custom:button-card
+                entity: input_number.ai_kuca_target_spajz
+                name: Špajz
+                show_icon: false
+                show_state: false
+                custom_fields:
+                  humidity: >-
+                    [[[ return `Vlaga ${states['sensor.vlaznost_spajz']?.state
+                    ?? '--'}%`; ]]]
+                  current: >-
+                    [[[ return `${states['sensor.temperatura_spajz']?.state ??
+                    '--'}°C`; ]]]
+                  target: "[[[ return `${entity?.state ?? '--'}°C`; ]]]"
+                  minus:
+                    card:
+                      type: custom:button-card
+                      icon: mdi:minus
+                      tap_action:
+                        action: call-service
+                        service: input_number.decrement
+                        target:
+                          entity_id: input_number.ai_kuca_target_spajz
+                      styles:
+                        card:
+                          - border-radius: 999px
+                          - width: 42px
+                          - height: 42px
+                          - background: rgba(255,255,255,0.12)
+                        icon:
+                          - color: white
+                  plus:
+                    card:
+                      type: custom:button-card
+                      icon: mdi:plus
+                      tap_action:
+                        action: call-service
+                        service: input_number.increment
+                        target:
+                          entity_id: input_number.ai_kuca_target_spajz
+                      styles:
+                        card:
+                          - border-radius: 999px
+                          - width: 42px
+                          - height: 42px
+                          - background: rgba(255,255,255,0.12)
+                        icon:
+                          - color: white
+                styles:
+                  card:
+                    - border-radius: 50%
+                    - aspect-ratio: 1 / 1
+                    - padding: 16px
+                    - background: |
+                        [[[
+                          const t = parseFloat(entity?.state);
+                          const min = parseFloat(entity?.attributes?.min ?? 8);
+                          const max = parseFloat(entity?.attributes?.max ?? 35);
+                          if (isNaN(t) || isNaN(min) || isNaN(max) || max <= min) {
+                            return 'radial-gradient(circle at 35% 25%, #3f5f7a, #1f2f44)';
+                          }
+                          const pct = Math.min(100, Math.max(0, ((t - min) / (max - min)) * 100));
+                          const arcPct = pct * 0.70;
+                          const current = parseFloat(states['sensor.temperatura_spajz']?.state);
+                          const humidity = parseFloat(states['sensor.vlaznost_spajz']?.state);
+                          const humidityPct = Math.min(100, Math.max(0, isNaN(humidity) ? 0 : humidity));
+                          let humidityColor = '#f6c200';
+                          if (humidityPct <= 55 && humidityPct >= 30) humidityColor = '#8bcf8b';
+                          else if (humidityPct > 55 && humidityPct <= 65) humidityColor = '#1f4f8f';
+                          else if (humidityPct > 65) humidityColor = '#e74c3c';
+                          const delta = isNaN(current) ? 0 : t - current;
+                          const ringColor = Math.abs(delta) <= 0.6 ? '#81c784' : (delta < 0.6 ? '#4fc3f7' : '#ffb74d');
+                          const humidityRadius = Math.max(0, Math.min(80, humidityPct * 0.8));
+                          return `radial-gradient(circle, transparent 0 94%, #2a3d52 94% 100%), radial-gradient(circle, ${humidityColor}b3 0 ${humidityRadius}%, rgba(0,0,0,0) ${humidityRadius + 1.4}% 100%) center / 80% 80% no-repeat, radial-gradient(circle, #2a3d52 0 58.1%, transparent 58.2% 70%, #2a3d52 70.1% 100%), conic-gradient(from 234deg, ${ringColor} 0 ${arcPct}%, rgba(255,255,255,0.2) ${arcPct}% 70%, transparent 70% 100%), radial-gradient(circle at 35% 25%, #3f5f7a, #1f2f44)`;
+                        ]]]
+                    - border: |
+                        [[[
+                          const current = parseFloat(states['sensor.temperatura_spajz']?.state);
+                          const target = parseFloat(entity?.state);
+                          if (isNaN(current) || isNaN(target)) return '2px solid rgba(255,255,255,0.2)';
+                          const delta = target - current;
+                          if (delta > 0.6) return '3px solid #4fc3f7';
+                          if (delta < -0.6) return '3px solid #ffb74d';
+                          return '3px solid #81c784';
+                        ]]]
+                    - box-shadow: |
+                        [[[
+                          const current = parseFloat(states['sensor.temperatura_spajz']?.state);
+                          const target = parseFloat(entity?.state);
+                          if (isNaN(current) || isNaN(target)) return '0 0 0 rgba(0,0,0,0)';
+                          const delta = target - current;
+                          if (delta > 0.6) return '0 0 18px rgba(79,195,247,0.45)';
+                          if (delta < -0.6) return '0 0 18px rgba(255,183,77,0.45)';
+                          return '0 0 16px rgba(129,199,132,0.42)';
+                        ]]]
+                    - transition: border 0.25s ease, box-shadow 0.25s ease
+                  grid:
+                    - grid-template-areas: >-
+                        "n n" "humidity humidity" "current current" "target
+                        target" "minus plus"
+                    - grid-template-columns: 1fr 1fr
+                    - grid-template-rows: min-content min-content 1fr min-content min-content
+                  name:
+                    - color: white
+                    - font-weight: 700
+                    - font-size: 15px
+                    - justify-self: center
+                    - align-self: end
+                    - transform: translateY(8px)
+                  custom_fields:
+                    humidity:
+                      - color: rgba(181,232,255,0.92)
+                      - font-size: 12px
+                      - font-weight: 600
+                      - justify-self: center
+                      - align-self: end
+                      - transform: translateY(6px)
+                    current:
+                      - color: "#8ee7ff"
+                      - font-size: 28px
+                      - font-weight: 700
+                      - justify-self: center
+                      - align-self: center
+                    target:
+                      - color: rgba(255,255,255,0.85)
+                      - font-size: 17px
+                      - font-weight: 650
+                      - justify-self: center
+                      - align-self: start
+                      - transform: translateY(-4px)
+                    minus:
+                      - justify-self: center
+                      - align-self: end
+                    plus:
+                      - justify-self: center
+                      - align-self: end
+          - type: custom:mushroom-title-card
+            title: Zone
+          - type: custom:mushroom-climate-card
+            entity: climate.radijator_dnevna
+            name: Dnevna
+            hvac_modes: []
+            show_temperature_control: true
+            collapsible_controls: true
+          - type: custom:mushroom-climate-card
+            entity: climate.radijator_spavaca
+            name: Spavaća
+            hvac_modes: []
+            show_temperature_control: true
+            collapsible_controls: true
+          - type: custom:mushroom-climate-card
+            entity: climate.radijator_kupaona
+            name: Kupaona
+            hvac_modes: []
+            show_temperature_control: true
+            collapsible_controls: true
+          - type: custom:mushroom-climate-card
+            entity: climate.radijator_tia
+            name: Tia
+            hvac_modes: []
+            show_temperature_control: true
+            collapsible_controls: true
+          - type: custom:mushroom-climate-card
+            entity: climate.radiator_mali
+            name: Mali
+            hvac_modes: []
+            show_temperature_control: true
+            collapsible_controls: true
+          - type: custom:mushroom-climate-card
+            entity: climate.radijator_spajz
+            name: Špajz
+            hvac_modes: []
+            show_temperature_control: true
+            collapsible_controls: true
+          - type: custom:mushroom-title-card
+            title: Stvarne temperature / vlaga
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:mushroom-entity-card
+                entity: sensor.temperatura_dnevna
+                name: Dnevna
+              - type: custom:mushroom-entity-card
+                entity: sensor.vlaznost_dnevna
+                name: Dnevna
+              - type: custom:mushroom-entity-card
+                entity: sensor.temperatura_spavaca
+                name: Spavaća
+              - type: custom:mushroom-entity-card
+                entity: sensor.vlaznost_spavaca
+                name: Spavaća
+              - type: custom:mushroom-entity-card
+                entity: sensor.temperatura_kupaona
+                name: Kupaona
+              - type: custom:mushroom-entity-card
+                entity: sensor.vlaznost_kupaona
+                name: Kupaona
+              - type: custom:mushroom-entity-card
+                entity: sensor.temperatura_tia
+                name: Tia
+              - type: custom:mushroom-entity-card
+                entity: sensor.vlaznost_tia
+                name: Tia
+              - type: custom:mushroom-entity-card
+                entity: sensor.temperatura_hodnik
+                name: Mali (hodnik)
+              - type: custom:mushroom-entity-card
+                entity: sensor.vlaznost_hodnik
+                name: Mali (hodnik)
+              - type: custom:mushroom-entity-card
+                entity: sensor.temperatura_spajz
+                name: Špajz
+              - type: custom:mushroom-entity-card
+                entity: sensor.vlaznost_spajz
+                name: Špajz
+              - type: custom:mushroom-entity-card
+                entity: sensor.temperatura_vani
+                name: Vanjska
+              - type: custom:mushroom-entity-card
+                entity: sensor.vlaznost_vani
+                name: Vanjska
+          - type: custom:mushroom-title-card
+            title: Predikcija temperature (1h)
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_dnevna_1h
+                primary: Dnevna
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_kupaona_1h
+                primary: Kupaona
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_spavaca_1h
+                primary: Spavaća
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_mali_1h
+                primary: Mali (hodnik)
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_tia_1h
+                primary: Tia
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_spajz_1h
+                primary: Špajz
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+          - type: custom:mushroom-title-card
+            title: Predikcija vlage (1h)
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_dnevna_1h
+                primary: Dnevna
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_kupaona_1h
+                primary: Kupaona
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_spavaca_1h
+                primary: Spavaća
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_mali_1h
+                primary: Mali (hodnik)
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_tia_1h
+                primary: Tia
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_spajz_1h
+                primary: Špajz
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+          - type: custom:mushroom-title-card
+            title: Predikcija temperature (30 min)
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_dnevna_30m
+                primary: Dnevna
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+                features_position: bottom
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_kupaona_30m
+                primary: Kupaona
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_spavaca_30m
+                primary: Spavaća
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_mali_30m
+                primary: Mali (hodnik)
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_tia_30m
+                primary: Tia
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_spajz_30m
+                primary: Špajz
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+          - type: custom:mushroom-title-card
+            title: Predikcija vlage (30 min)
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_dnevna_30m
+                primary: Dnevna
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+                features_position: bottom
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_kupaona_30m
+                primary: Kupaona
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+                features_position: bottom
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_spavaca_30m
+                primary: Spavaća
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+                features_position: bottom
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_mali_30m
+                primary: Mali (hodnik)
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_tia_30m
+                primary: Tia
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_spajz_30m
+                primary: Špajz
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+          - type: custom:mushroom-title-card
+            title: Predikcija temperature (15 min)
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_dnevna_15m
+                primary: Dnevna
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_kupaona_15m
+                primary: Kupaona
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_spavaca_15m
+                primary: Spavaća
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_mali_15m
+                primary: Mali (hodnik)
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_tia_15m
+                primary: Tia
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_spajz_15m
+                primary: Špajz
+                secondary: >
+                  {{ states(entity) }} °C {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} mdi:arrow-up {% elif t == 'cooling' %} mdi:arrow-down {%
+                  else %} mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'heating'
+                  %} red {% elif t == 'cooling' %} blue {% elif t == 'steady' %}
+                  green {% else %} grey {% endif %}
+          - type: custom:mushroom-title-card
+            title: Predikcija vlage (15 min)
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_dnevna_15m
+                primary: Dnevna
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_kupaona_15m
+                primary: Kupaona
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_spavaca_15m
+                primary: Spavaća
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_mali_15m
+                primary: Mali (hodnik)
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_tia_15m
+                primary: Tia
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+              - type: custom:mushroom-template-card
+                entity: sensor.predict_humidity_spajz_15m
+                primary: Špajz
+                secondary: >
+                  {{ states(entity) }} % {% if state_attr(entity,'window_open')
+                  %} | 🪟 OTVOREN {% endif %}
+                icon: >
+                  {% set t = state_attr(entity,'trend') %} {% if t == 'rastu' %}
+                  mdi:arrow-up {% elif t == 'pada' %} mdi:arrow-down {% else %}
+                  mdi:minus {% endif %}
+                icon_color: >
+                  {% set t = state_attr(entity,'trend') %} {% set v =
+                  states(entity) | float(0) %} {% if t == 'rastu' %} #003b8e {%
+                  elif t == 'pada' %} #f6c200 {% else %}
+                    {% if v > 60 %} #2f7ed8
+                    {% elif v < 40 %} #f6c200
+                    {% else %} #2e7d32
+                    {% endif %}
+                  {% endif %}
+          - type: custom:mushroom-title-card
+            title: Logovi (AI_KUCA)
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_grijanje
+            primary: Log Grijanje (glavni)
+            secondary: |
+              {{ states('sensor.ai_kuca_log_grijanje') }}
+            icon: mdi:home-thermometer
+            icon_color: orange
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_overheat
+            primary: Log Overheat
+            secondary: |
+              {{ states('sensor.ai_kuca_log_overheat') }}
+            icon: mdi:alert-octagon
+            icon_color: red
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_pumpa
+            primary: Log Pumpa
+            secondary: |
+              {{ states('sensor.ai_kuca_log_pumpa') }}
+            icon: mdi:pump
+            icon_color: blue
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_ventil
+            primary: Log Ventil
+            secondary: |
+              {{ states('sensor.ai_kuca_log_ventil') }}
+            icon: mdi:valve
+            icon_color: purple
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_boost
+            primary: Log Boost
+            secondary: |
+              {{ states('sensor.ai_kuca_log_boost') }}
+            icon: mdi:rocket-launch
+            icon_color: deep-orange
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_predikcija_temperature
+            primary: Log Predikcija temperature
+            secondary: |
+              {{ states('sensor.ai_kuca_log_predikcija_temperature') }}
+            icon: mdi:chart-line
+            icon_color: teal
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_predikcija_vlage
+            primary: Log Predikcija vlage
+            secondary: |
+              {{ states('sensor.ai_kuca_log_predikcija_vlage') }}
+            icon: mdi:water-percent
+            icon_color: blue
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log_ventilacija
+            primary: Log Ventilacija
+            secondary: |
+              {{ states('sensor.ai_kuca_log_ventilacija') }}
+            icon: mdi:fan
+            icon_color: blue
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_log
+            primary: AI logger Status (AI Learning)
+            secondary: |
+              {{ states('sensor.ai_kuca_log') }}
+            icon: mdi:home-assistant
+            icon_color: green
+          - type: custom:mushroom-template-card
+            entity: sensor.ai_kuca_config
+            primary: Config Status
+            secondary: |
+              {{ states('sensor.ai_kuca_config') }}
+            icon: mdi:check-decagram
+            icon_color: amber
+          - type: custom:mushroom-title-card
+            title: Kontrole grijanja & energije
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:mushroom-entity-card
+                entity: input_boolean.laku_noc
+                name: Laku noć
+                icon: mdi:bed
+              - type: custom:mushroom-entity-card
+                entity: input_boolean.ventilacija_pauzirana
+                name: Ventilacija pauzirana
+                icon: mdi:pause-circle
+          - type: custom:mushroom-title-card
+            title: Senzori & Predikcija (rate)
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:mushroom-template-card
+                entity: sensor.dnevna_heating_rate
+                primary: Dnevna - heating rate
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.dnevna_cooling_rate
+                primary: Dnevna - cooling rate
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.dnevna_heat_lost_rate
+                primary: Dnevna - heat lost
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.spavaca_heating_rate
+                primary: Spavaća - heating rate
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.spavaca_cooling_rate
+                primary: Spavaća - cooling rate
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.spavaca_heat_lost_rate
+                primary: Spavaća - heat lost
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.kupaona_heating_rate
+                primary: Kupaona - heating rate
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.kupaona_cooling_rate
+                primary: Kupaona - cooling rate
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.kupaona_heat_lost_rate
+                primary: Kupaona - heat lost
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.mali_heating_rate
+                primary: Mali - heating rate
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.mali_cooling_rate
+                primary: Mali - cooling rate
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.mali_heat_lost_rate
+                primary: Mali - heat lost
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.tia_heating_rate
+                primary: Tia - heating rate
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.tia_cooling_rate
+                primary: Tia - cooling rate
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.tia_heat_lost_rate
+                primary: Tia - heat lost
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.spajz_heating_rate
+                primary: Špajz - heating rate
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.spajz_cooling_rate
+                primary: Špajz - cooling rate
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+              - type: custom:mushroom-template-card
+                entity: sensor.spajz_heat_lost_rate
+                primary: Špajz - heat lost
+                secondary: |
+                  {{ states(entity) }} °C/min
+                icon: mdi:speedometer
+      - type: heading
+        heading: Automatika -> Mjesajuci ventil / Pumpa / Klapna
+        heading_style: title
+        icon: mdi:valve
+      - show_name: true
+        show_icon: true
+        type: button
+        entity: script.restart_regulacije_grijanja
+        name: Restart regulacije
+        icon: mdi:restart
+        tap_action:
+          action: none
+        hold_action:
+          action: toggle
+        grid_options:
+          rows: 2
+          columns: 12
+        show_state: false
+        color: red
+      - show_name: true
+        show_icon: true
+        type: button
+        name: Kalibracija ventila (0%)
+        icon: mdi:valve
+        grid_options:
+          columns: 6
+          rows: 2
+        show_state: false
+        color: red
+        entity: script.sigurna_nula
+        hold_action:
+          action: perform-action
+          perform_action: script.sigurna_nula
+          target: {}
+      - show_name: true
+        show_icon: true
+        type: button
+        name: Kalibracija ventila (100%)
+        icon: mdi:valve
+        grid_options:
+          columns: 6
+          rows: 2
+        show_state: false
+        entity: script.sigurna_stotka
+        color: red
+        hold_action:
+          action: perform-action
+          perform_action: script.sigurna_stotka
+          target: {}
+    column_span: 4
+  - type: grid
+    cards:
+      - type: heading
+        heading: Automatika -> Spremnik peleta
+        heading_style: title
+        icon: mdi:silo
+      - type: gauge
+        entity: input_number.peleti_u_spremniku
+        needle: false
+        min: 0
+        max: 270
+        unit: Kg
+        tap_action:
+          action: none
+        severity:
+          green: 130
+          yellow: 65
+          red: 30
+        grid_options:
+          columns: full
+          rows: auto
+        hold_action:
+          action: more-info
+        name: Stanje u spremniku
+      - type: tile
+        grid_options:
+          rows: 2
+          columns: full
+        entity: input_number.dodane_vrece
+        name: DODAJ
+        color: green
+        show_entity_picture: false
+        hide_state: false
+        vertical: true
+        tap_action:
+          action: perform-action
+          perform_action: script.pribroji_pelete_3
+          target: {}
+        features:
+          - style: buttons
+            type: numeric-input
+        features_position: bottom
+      - type: tile
+        entity: input_number.potroseno_danas
+        vertical: false
+        features_position: bottom
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: counter.brojac_paljenja
+        name: Brojac paljenja
+        vertical: false
+        features_position: bottom
+      - type: tile
+        entity: sensor.cm_pelet_set_boiler_state
+        name: Program
+        show_entity_picture: false
+        hide_state: false
+        state_content:
+          - state
+          - last_changed
+        vertical: false
+        features_position: bottom
+      - type: tile
+        entity: timer.rad_puza
+        vertical: false
+        features_position: bottom
+header:
+  layout: center
+  badges_position: bottom
+  badges_wrap: scroll
+  card:
+    type: markdown
+    content: "# Hello {{ user }}"
+    text_only: true
+badges:
+  - type: custom:button-card
+    name: Natrag
+    icon: mdi:arrow-left
+    tap_action:
+      action: navigate
+      navigation_path: /dashboard-hemma/
+    style: |
+      ha-card {
+        margin-top: 20px;
+      }
+  - type: entity
+    show_name: false
+    show_state: true
+    show_icon: true
+    entity: sensor.boiler_temperature_status
+cards: []
+icon: mdi:fireplace
+background:
+  opacity: 70
+  alignment: center
+  size: cover
+  repeat: repeat
+  attachment: fixed
+  image:
+    media_content_id: media-source://image_upload/8e1ed382db3e84a4d2cd23c376c647b0
+    media_content_type: image/png
+    metadata:
+      title: ChatGPT Image 16. velj 2026. 04_26_54.png
+      thumbnail: /api/image/serve/8e1ed382db3e84a4d2cd23c376c647b0/256x256
+      media_class: image
+      navigateIds:
+        - {}
+        - media_content_type: app
+          media_content_id: media-source://image_upload
+dense_section_placement: false
+theme: homio

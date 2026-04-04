@@ -10,12 +10,11 @@
 import os
 from datetime import datetime
 import json
-import yaml
-import appdaemon.plugins.hass.hassapi as hass
+from ai_kuca.core.base_app import BaseApp
 from ai_kuca.core.logger import push_log_to_ha
 
 
-class AIOverheat(hass.Hass):
+class AIOverheat(BaseApp):
     """
     Klasa za kontrolu overheat stanja u grijanju.
     
@@ -27,13 +26,24 @@ class AIOverheat(hass.Hass):
     Koristi histerezu za stabilne prijelaze i sprema snapshot prethodnih ciljeva.
     """
     def initialize(self):
+        self.init_base()
+        system_cfg = self.load_system_config()
+        self.log_level = system_cfg.get("logging_level", "INFO")
+        log_cfg = system_cfg.get("ai_kuca_log", {})
+        log_map = system_cfg.get("ai_kuca_log_sensors", {})
+        self.log_sensor_entity = log_map.get(
+            "overheat", log_cfg.get("sensor_entity", "sensor.ai_kuca_log")
+        )
+        self.log_history_seconds = int(log_cfg.get("history_seconds", 120))
+        self.log_max_items = int(log_cfg.get("max_items", 50))
+        self.version = "V2." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
+        self.log_h(f"AI overheat {self.version} pokrenut", level="INFO")
         """
         Inicijalizira AIOverheat skriptu.
         
         UÄŤitava konfiguraciju, postavlja senzore i entitete, te pokreÄ‡e glavnu petlju.
         TakoÄ‘er uÄŤitava snapshot prethodnih ciljeva iz datoteke ako postoji.
         """
-        self.version = "V2." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
         system_cfg = self.load_system_config()
         overheat_cfg = system_cfg.get("overheat", {})
         heating_cfg = system_cfg.get("heating_main", {})
@@ -95,11 +105,7 @@ class AIOverheat(hass.Hass):
         self.original_targets = {}
         self.full_open_done = False
 
-        config_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", "room_configs.yaml")
-        )
-        with open(config_path, "r", encoding="utf-8") as f:
-            self.rooms = yaml.safe_load(f) or {}
+        self.rooms = self.load_yaml_file("room_configs.yaml")
 
         self.snapshot_path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "..", "..", "config", "overheat_snapshot.json")
@@ -265,7 +271,16 @@ class AIOverheat(hass.Hass):
         )
 
         if boiler_temp is None or outdoor_temp is None:
-            return self.system_enabled
+            self.ensure_required_sensors(
+                {
+                    "boiler_sensor": self.boiler_sensor,
+                    "outdoor_sensor": self.outdoor_sensor,
+                },
+                module_name="AIOverheat",
+                cooldown_sec=900,
+            )
+            self.system_enabled = False
+            return False
 
         if boiler_temp < 35.0 or outdoor_temp > 21.0:
             self.system_enabled = False
@@ -319,8 +334,11 @@ class AIOverheat(hass.Hass):
                 return
             with open(self.snapshot_path, "w", encoding="utf-8") as f:
                 json.dump(self.pre_overheat_targets, f)
-        except Exception:
-            pass
+        except Exception as ex:
+            self.log_h(
+                f"OVERHEAT snapshot write failed | path={self.snapshot_path} | clear={clear} | err={ex}",
+                level="WARNING",
+            )
 
     def restore_snapshot_from_file(self):
         if not os.path.exists(self.snapshot_path):
@@ -331,7 +349,11 @@ class AIOverheat(hass.Hass):
             if isinstance(data, dict):
                 self.pre_overheat_targets = {k: float(v) for k, v in data.items()}
                 self.baseline_targets = dict(self.pre_overheat_targets)
-        except Exception:
+        except Exception as ex:
+            self.log_h(
+                f"OVERHEAT snapshot read failed | path={self.snapshot_path} | err={ex}",
+                level="WARNING",
+            )
             return
 
     def get_kotao_temp(self):
@@ -353,10 +375,12 @@ class AIOverheat(hass.Hass):
     def set_climate_if_changed(self, climate_entity, target):
         current = self.as_float(self.get_state(climate_entity, attribute="temperature"), None)
         if current is None or abs(current - target) >= 0.1:
-            self.call_service(
-                "climate/set_temperature",
+            self.set_climate_target_guarded(
                 entity_id=climate_entity,
-                temperature=round(target, 1),
+                temperature=target,
+                owner="overheat",
+                priority=100,
+                ttl_sec=180,
             )
 
     def get_temp(self, entity):
@@ -385,19 +409,6 @@ class AIOverheat(hass.Hass):
             return float(value)
         except Exception:
             return default
-
-    def load_system_config(self):
-        return self.load_yaml_file("system_configs.yaml")
-
-    def load_yaml_file(self, filename):
-        path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", filename)
-        )
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return yaml.safe_load(f) or {}
-        except Exception:
-            return {}
 
     def log_h(self, message, level="INFO"):
         push_log_to_ha(self, message, level, self.log_sensor_entity, self.log_history_seconds, self.log_max_items)

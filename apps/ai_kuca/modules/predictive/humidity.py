@@ -2,12 +2,11 @@ import os
 import time
 import json
 from datetime import datetime, timezone
-import yaml
-import appdaemon.plugins.hass.hassapi as hass
+from ai_kuca.core.base_app import BaseApp
 from ai_kuca.core.logger import push_log_to_ha
 
 
-class PredictiveHumidity(hass.Hass):
+class PredictiveHumidity(BaseApp):
     """
     Klasa za prediktivne senzore vlage soba.
     
@@ -15,19 +14,25 @@ class PredictiveHumidity(hass.Hass):
     za predviÄ‘enu vlagu za 15min, 30min i 1h.
     """
     def initialize(self):
+        self.init_base()
+        system_cfg = self.load_system_config()
+        self.log_level = system_cfg.get("logging_level", "INFO")
+        log_cfg = system_cfg.get("ai_kuca_log", {})
+        log_map = system_cfg.get("ai_kuca_log_sensors", {})
+        self.log_sensor_entity = log_map.get(
+            "predictive_humidity", log_cfg.get("sensor_entity", "sensor.ai_kuca_log")
+        )
+        self.log_history_seconds = int(log_cfg.get("history_seconds", 120))
+        self.log_max_items = int(log_cfg.get("max_items", 50))
+        self.version = "V1." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
+        self.log_h(f"AI predikcija vlage {self.version} pokrenuta", level="INFO")
         """
         Inicijalizira PredictiveHumidity skriptu.
         
         UÄŤitava konfiguraciju soba i postavke povijesti,
         te pokreÄ‡e petlju aĹľuriranja svakih interval_sec sekundi.
         """
-        self.version = "V1." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
-
-        config_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", "room_configs.yaml")
-        )
-        with open(config_path, "r", encoding="utf-8") as f:
-            self.rooms = yaml.safe_load(f) or {}
+        self.rooms = self.load_yaml_file("room_configs.yaml")
 
         system_cfg = self.load_system_config()
         cfg = system_cfg.get("predictive_humidity", {})
@@ -77,6 +82,7 @@ class PredictiveHumidity(hass.Hass):
 
             value = self.get_float(humidity_sensor)
             if value is None:
+                self.notify_missing_sensor(humidity_sensor, module_name="PredictiveHumidity", cooldown_sec=900)
                 continue
 
             series = self.history.setdefault(room_name, [])
@@ -180,7 +186,11 @@ class PredictiveHumidity(hass.Hass):
                     k: [p for p in v if isinstance(p, dict) and "ts" in p and "value" in p]
                     for k, v in data.items()
                 }
-        except Exception:
+        except Exception as ex:
+            self.log_h(
+                f"PRED HUM: history read failed | path={self.history_file_path} | err={ex}",
+                level="WARNING",
+            )
             return
 
     def save_history_throttled(self):
@@ -192,21 +202,12 @@ class PredictiveHumidity(hass.Hass):
         try:
             with open(self.history_file_path, "w", encoding="utf-8") as f:
                 json.dump(self.history, f)
-        except Exception:
+        except Exception as ex:
+            self.log_h(
+                f"PRED HUM: history write failed | path={self.history_file_path} | err={ex}",
+                level="WARNING",
+            )
             return
-
-    def load_system_config(self):
-        return self.load_yaml_file("system_configs.yaml")
-
-    def load_yaml_file(self, filename):
-        path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", filename)
-        )
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return yaml.safe_load(f) or {}
-        except Exception:
-            return {}
 
     def log_h(self, message, level="INFO"):
         push_log_to_ha(self, message, level, self.log_sensor_entity, self.log_history_seconds, self.log_max_items)

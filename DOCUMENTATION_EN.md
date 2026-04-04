@@ -151,3 +151,66 @@ Reload after changes:
 
 - "Can I use only part of the system?"  
   Yes. The design is modular; enable only what you need.
+
+## 8) Changelog (2026-04-04)
+
+This section summarizes the key technical changes made for stability hardening and AI-learning readiness.
+
+### 8.1 Docker and deployment
+
+- `docker-compose.yaml`:
+1. image pinned to `acockburn/appdaemon:4.4.2` (instead of `latest`) for deterministic deploys.
+2. explicit mounts added for `conf/ai_logs`, `conf/dashboards`, `conf/namespaces`.
+3. reduced volume overlap risk and runtime ambiguity.
+
+- `editors/fresh_install.py`:
+1. bootstrap compose template aligned with pinned image + explicit mount strategy.
+
+### 8.2 Security and .env
+
+- `.env` hardening:
+1. file permissions set to `600`.
+2. `.env` removed from git index (`git rm --cached .env`) and no longer versioned.
+
+### 8.3 Logger and AI dataset base
+
+- `apps/ai_universal_logger_v4.py`:
+1. safer bool parsing (`_coerce_bool`) for key feature toggles.
+2. payload sanitization (`_sanitize_payload`) plus sensitive key redaction (`REDACT_KEYS`).
+3. improved exception handling with explicit warning/debug logs (no silent failures).
+4. AI metadata fields added:
+  - `schema_version`
+  - `event_id`
+  - `session_id`
+5. minimal per-event state `snapshot` added (configurable via app args).
+6. delayed outcome logging added for state changes:
+  - `type=outcome`, `event=state_outcome`
+  - `parent_event_id`
+  - `target_state`
+  - `state_after_delay`
+  - `delay_sec`
+  - `matched_target`
+
+### 8.4 Export pipeline (JSONL -> CSV)
+
+- `conf/ai_logs/export_ai_dataset.py`:
+1. normalization extended to carry new AI metadata and outcome fields.
+2. `ai_events.csv` and `trainer_ready.csv` schemas extended with:
+  - `schema_version`, `event_id`, `session_id`
+  - `parent_event_id`
+  - `snapshot`
+  - `target_state`, `state_after_delay`, `delay_sec`, `matched_target`
+3. dedup logic improved: when `event_id` exists, it is used as primary dedup key.
+
+### 8.5 Validator and UI stability
+
+- `apps/ai_kuca/modules/config/validator.py`:
+1. `validator_dry_run` now uses robust bool coercion.
+2. `validator_ui_refresh_sec` introduced (default 15s, minimum 10s) instead of fixed 5s polling.
+3. improved logging for debounce cancel and dropdown update failures.
+
+### 8.6 Operational note
+
+- `conf/ai_logs` is the runtime event base for future AI training.
+- daily/weekly CSV export is active and confirmed in `conf/ai_logs/ai_trainer/export_cron.log`.
+- outcome records appear after logger deployment and configured delay intervals elapse.

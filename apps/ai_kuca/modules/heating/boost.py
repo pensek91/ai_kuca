@@ -1,11 +1,10 @@
 import os
 from datetime import datetime
-import yaml
-import appdaemon.plugins.hass.hassapi as hass
+from ai_kuca.core.base_app import BaseApp
 from ai_kuca.core.logger import push_log_to_ha
 
 
-class AIBoost(hass.Hass):
+class AIBoost(BaseApp):
     """
     Klasa za boost grijanja odabrane sobe.
     
@@ -13,16 +12,8 @@ class AIBoost(hass.Hass):
     koristeÄ‡i boost razinu i trajanje iz input_select-a.
     """
     def initialize(self):
-        """
-        Inicijalizira AIBoost skriptu.
-        
-        UÄŤitava konfiguraciju boost opcija i soba, te sluĹˇa promjene
-        na boost_select i duration_select entitetima.
-        """
-        self.version = "V2." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
+        self.init_base()
         system_cfg = self.load_system_config()
-        boost_cfg = system_cfg.get("boost", {})
-        heating_cfg = system_cfg.get("heating_main", {})
         self.log_level = system_cfg.get("logging_level", "INFO")
         log_cfg = system_cfg.get("ai_kuca_log", {})
         log_map = system_cfg.get("ai_kuca_log_sensors", {})
@@ -31,6 +22,17 @@ class AIBoost(hass.Hass):
         )
         self.log_history_seconds = int(log_cfg.get("history_seconds", 120))
         self.log_max_items = int(log_cfg.get("max_items", 50))
+        self.version = "V2." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
+        self.log_h(f"AI boost {self.version} pokrenut", level="INFO")
+        """
+        Inicijalizira AIBoost skriptu.
+        
+        UÄŤitava konfiguraciju boost opcija i soba, te sluĹˇa promjene
+        na boost_select i duration_select entitetima.
+        """
+        system_cfg = self.load_system_config()
+        boost_cfg = system_cfg.get("boost", {})
+        heating_cfg = system_cfg.get("heating_main", {})
 
         self.boost_select = boost_cfg.get("boost_select")
         self.duration_select = boost_cfg.get("duration_select")
@@ -63,11 +65,7 @@ class AIBoost(hass.Hass):
             )
             self.system_enabled = False
 
-        config_file = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", "room_configs.yaml")
-        )
-        with open(config_file, "r", encoding="utf-8") as f:
-            self.rooms = yaml.safe_load(f) or {}
+        self.rooms = self.load_yaml_file("room_configs.yaml")
 
         self.previous_targets = {}
         self.timer = None
@@ -180,7 +178,13 @@ class AIBoost(hass.Hass):
             )
 
         for climate in selected_rooms:
-            self.call_service("climate/set_temperature", entity_id=climate, temperature=35)
+            self.set_climate_target_guarded(
+                entity_id=climate,
+                temperature=35,
+                owner="boost",
+                priority=80,
+                ttl_sec=max(boost_seconds, 300),
+            )
             self.log_h(f"BOOST soba {climate} -> 35C", level="DEBUG")
 
         self.log_h(f"BOOST POCETAK | sobe: {selected_rooms} | trajanje: {boost_seconds / 60:.0f} min")
@@ -192,7 +196,13 @@ class AIBoost(hass.Hass):
 
     def end_boost(self, kwargs):
         for climate, temp in self.previous_targets.items():
-            self.call_service("climate/set_temperature", entity_id=climate, temperature=temp)
+            self.set_climate_target_guarded(
+                entity_id=climate,
+                temperature=temp,
+                owner="boost",
+                priority=80,
+                ttl_sec=120,
+            )
 
         self.previous_targets = {}
         self.call_service("input_select/select_option", entity_id=self.boost_select, option="NONE")
@@ -255,7 +265,16 @@ class AIBoost(hass.Hass):
         outdoor_temp = self.get_outdoor_temp_avg()
 
         if boiler_temp is None or outdoor_temp is None:
-            return self.system_enabled
+            self.ensure_required_sensors(
+                {
+                    "boiler_sensor": self.boiler_sensor,
+                    "outdoor_sensor": self.outdoor_sensor,
+                },
+                module_name="AIBoost",
+                cooldown_sec=900,
+            )
+            self.system_enabled = False
+            return False
 
         if boiler_temp < 35.0 or outdoor_temp > 21.0:
             self.system_enabled = False
@@ -293,19 +312,6 @@ class AIBoost(hass.Hass):
             return float(value)
         except Exception:
             return None
-
-    def load_system_config(self):
-        return self.load_yaml_file("system_configs.yaml")
-
-    def load_yaml_file(self, filename):
-        path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", filename)
-        )
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return yaml.safe_load(f) or {}
-        except Exception:
-            return {}
 
     def log_h(self, message, level="INFO"):
         push_log_to_ha(self, message, level, self.log_sensor_entity, self.log_history_seconds, self.log_max_items)

@@ -1,48 +1,48 @@
 {
-  "generated_at": "2026-03-29T14:47:44.656399+00:00",
+  "generated_at": "2026-04-04T07:04:38.087529+00:00",
   "window_minutes": 120,
   "rooms": {
     "spavaca": {
-      "samples": 116,
-      "current": 58.96,
-      "min": 57.94,
-      "max": 59.03,
-      "avg": 58.13
+      "samples": 101,
+      "current": 65.4,
+      "min": 63.04,
+      "max": 65.4,
+      "avg": 64.8
     },
     "dnevna": {
-      "samples": 116,
-      "current": 54.21,
-      "min": 53.46,
-      "max": 54.21,
-      "avg": 53.79
+      "samples": 101,
+      "current": 64.42,
+      "min": 63.22,
+      "max": 64.42,
+      "avg": 63.35
     },
     "kupaona": {
-      "samples": 116,
-      "current": 60.18,
-      "min": 56.34,
-      "max": 60.18,
-      "avg": 57.17
+      "samples": 101,
+      "current": 65.0,
+      "min": 63.28,
+      "max": 65.0,
+      "avg": 64.36
     },
     "tia": {
-      "samples": 116,
-      "current": 56.19,
-      "min": 56.06,
-      "max": 59.16,
-      "avg": 56.3
+      "samples": 101,
+      "current": 64.77,
+      "min": 64.31,
+      "max": 64.77,
+      "avg": 64.75
     },
     "mali": {
-      "samples": 116,
-      "current": 45.45,
-      "min": 45.45,
-      "max": 47.15,
-      "avg": 46.13
+      "samples": 101,
+      "current": 55.45,
+      "min": 54.89,
+      "max": 55.45,
+      "avg": 55.09
     },
     "spajz": {
-      "samples": 116,
-      "current": 73.4,
-      "min": 72.58,
-      "max": 73.4,
-      "avg": 72.98
+      "samples": 101,
+      "current": 75.37,
+      "min": 75.37,
+      "max": 75.54,
+      "avg": 75.47
     }
   }
 }

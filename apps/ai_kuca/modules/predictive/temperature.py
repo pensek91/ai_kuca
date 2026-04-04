@@ -1,23 +1,33 @@
 # AI Heating Predictive Sensors V3.6 (15m/30m/1h predictions)
 
 import os
-from datetime import datetime
 import time
 import math
-import yaml
 import json
 from datetime import datetime, timezone
-import appdaemon.plugins.hass.hassapi as hass
+from ai_kuca.core.base_app import BaseApp
 from ai_kuca.core.logger import push_log_to_ha
 
 
-class PredictiveSensors(hass.Hass):
+class PredictiveSensors(BaseApp):
     """
     Klasa za prediktivne senzore temperature soba.
     Sada podržava pametni boost: automatski može privremeno povisiti target iznad ručno unesenog,
     a kad se približi, vraća ga na ručni target. Svi parametri su konfigurabilni.
     """
     def initialize(self):
+        self.init_base()
+        system_cfg = self.load_system_config()
+        self.log_level = system_cfg.get("logging_level", "INFO")
+        log_cfg = system_cfg.get("ai_kuca_log", {})
+        log_map = system_cfg.get("ai_kuca_log_sensors", {})
+        self.log_sensor_entity = log_map.get(
+            "predictive_temperature", log_cfg.get("sensor_entity", "sensor.ai_kuca_log")
+        )
+        self.log_history_seconds = int(log_cfg.get("history_seconds", 120))
+        self.log_max_items = int(log_cfg.get("max_items", 50))
+        self.version = "V3." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
+        self.log_h(f"AI predikcija temperature {self.version} pokrenuta", level="INFO")
         self.last_auto_target = {}
         """
         Inicijalizira PredictiveSensors skriptu.
@@ -25,12 +35,14 @@ class PredictiveSensors(hass.Hass):
         UÄŤitava konfiguraciju, postavlja prozore povijesti i koeficijente,
         te pokreÄ‡e petlju aĹľuriranja svakih 60 sekundi.
         """
-        self.version = "V3." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
-        config_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", "room_configs.yaml")
-        )
-        with open(config_path, "r", encoding="utf-8") as f:
-            self.rooms = yaml.safe_load(f) or {}
+        rooms_cfg = self.load_yaml_file("room_configs.yaml")
+        if not isinstance(rooms_cfg, dict):
+            self.log_h(
+                "room_configs.yaml nije valjan dict; koristim praznu konfiguraciju",
+                level="WARNING",
+            )
+            rooms_cfg = {}
+        self.rooms = rooms_cfg
 
         system_cfg = self.load_system_config()
         predictive_cfg = system_cfg.get("predictive", {})
@@ -52,6 +64,23 @@ class PredictiveSensors(hass.Hass):
         self.forecast_entity = predictive_cfg.get("forecast_entity")
         self.pump_switch = predictive_cfg.get("pump_switch")
 
+        self.log_h(
+            "Startup self-check | "
+            f"rooms={len(self.rooms)} | "
+            f"forecast_entity={'set' if self.forecast_entity else 'missing'} | "
+            f"outdoor_sensors={len(self.outdoor_temp_sensors)} | "
+            f"pump_switch={'set' if self.pump_switch else 'missing'}",
+            level="INFO",
+        )
+        if not self.rooms:
+            self.log_h("Startup self-check: nema konfiguriranih soba u room_configs.yaml", level="WARNING")
+        if not self.forecast_entity:
+            self.log_h("Startup self-check: forecast_entity nije postavljen (fallback na senzore)", level="WARNING")
+        if not self.outdoor_temp_sensors:
+            self.log_h("Startup self-check: outdoor_temp_sensors je prazan", level="WARNING")
+        if not self.pump_switch:
+            self.log_h("Startup self-check: pump_switch nije postavljen", level="WARNING")
+
         # windows
         self.window_short_minutes = int(predictive_cfg.get("window_short_minutes", 15))
         self.window_long_minutes = int(predictive_cfg.get("window_long_minutes", 60))
@@ -70,13 +99,17 @@ class PredictiveSensors(hass.Hass):
         self.recommended_target_max_adjust = float(
             predictive_cfg.get("recommended_target_max_adjust", 2.0)
         )
-        self.auto_apply_targets = bool(predictive_cfg.get("auto_apply_targets", False))
+        self.auto_apply_targets = self.coerce_bool(
+            predictive_cfg.get("auto_apply_targets"),
+            False,
+        )
         self.auto_apply_deadband = float(predictive_cfg.get("auto_apply_deadband", 0.2))
         self.auto_apply_max_step_per_cycle = float(
             predictive_cfg.get("auto_apply_max_step_per_cycle", 0.5)
         )
-        self.auto_apply_skip_when_overheat = bool(
-            predictive_cfg.get("auto_apply_skip_when_overheat", True)
+        self.auto_apply_skip_when_overheat = self.coerce_bool(
+            predictive_cfg.get("auto_apply_skip_when_overheat"),
+            True,
         )
         self.overheat_switch = heating_cfg.get("overheat_switch")
         self.max_room_temp = float(heating_cfg.get("max_room_temp", 35.0))
@@ -119,8 +152,6 @@ class PredictiveSensors(hass.Hass):
             level="DEBUG",
         )
 
-        pump_on = self.get_state(self.pump_switch) == "on"
-
         for room_name, cfg in self.rooms.items():
             climate_entity = cfg.get("climate")
             temp_sensor = cfg.get("temp_sensor")
@@ -149,6 +180,8 @@ class PredictiveSensors(hass.Hass):
                 curr_temp = self.get_climate_temp(climate_entity)
 
             if curr_temp is None:
+                if temp_sensor:
+                    self.notify_missing_sensor(temp_sensor, module_name="PredictiveSensors", cooldown_sec=900)
                 continue
 
             if room_name not in self.history:
@@ -280,13 +313,11 @@ class PredictiveSensors(hass.Hass):
                 )
 
             # --- NOVO: pametni boost logika ---
-            manual_target = cfg.get("manual_target")
-            if manual_target is None:
-                manual_target = curr_temp  # ili current_target ako postoji
+            manual_target = self.get_room_manual_target(cfg, fallback=curr_temp)
             boost_target = manual_target
             smart_boost_enabled = room_pred_cfg.get("smart_boost_enabled", False)
-            smart_boost_delta = room_pred_cfg.get("smart_boost_delta", 2.0)
-            smart_boost_max = room_pred_cfg.get("smart_boost_max", 25.0)
+            smart_boost_delta = self.as_float(room_pred_cfg.get("smart_boost_delta"), 2.0)
+            smart_boost_max = self.as_float(room_pred_cfg.get("smart_boost_max"), 25.0)
             if smart_boost_enabled and (manual_target - curr_temp) >= smart_boost_delta:
                 boost_target = min(manual_target + smart_boost_delta, smart_boost_max)
             target_info = self.publish_recommended_target(
@@ -359,8 +390,11 @@ class PredictiveSensors(hass.Hass):
             self.max_room_temp,
         )
 
-        target_source = "climate.temperature"
-        current_target = self.get_climate_target(climate_entity)
+        target_source = "room.target_input"
+        current_target = self.get_room_target_from_helper(cfg)
+        if current_target is None:
+            target_source = "climate.temperature"
+            current_target = self.get_climate_target(climate_entity)
         if current_target is None:
             target_source = "room_configs.target"
             current_target = self.as_float(cfg.get("target"))
@@ -387,7 +421,7 @@ class PredictiveSensors(hass.Hass):
                 "unit_of_measurement": "C",
                 "soba": room_name,
                 "mode": "suggestion_only",
-                "auto_apply_enabled": False,
+                "auto_apply_enabled": bool(self.auto_apply_targets and room_auto_apply),
                 "prediction_ready": bool(prediction_ready),
                 "reason": reason,
                 "climate_entity": climate_entity,
@@ -463,10 +497,12 @@ class PredictiveSensors(hass.Hass):
             return
 
         try:
-            self.call_service(
-                "climate/set_temperature",
+            self.set_climate_target_guarded(
                 entity_id=climate_entity,
-                temperature=round(limited, 2),
+                temperature=limited,
+                owner="predictive",
+                priority=60,
+                ttl_sec=120,
             )
             self.log_h(
                 f"AUTO TARGET {room_name}: {current_target:.2f} -> {limited:.2f} (pred_1h regulacija)",
@@ -497,6 +533,9 @@ class PredictiveSensors(hass.Hass):
         return False
 
     def get_forecast_temp(self, hours_ahead):
+        if not self.forecast_entity:
+            return None
+
         forecast = self.get_state(self.forecast_entity, attribute="forecast")
         if not isinstance(forecast, list) or not forecast:
             return None
@@ -507,7 +546,7 @@ class PredictiveSensors(hass.Hass):
 
         for item in forecast:
             dt_str = item.get("datetime") or item.get("time")
-            temp = item.get("temperature")
+            temp = self.as_float(item.get("temperature"))
             if dt_str is None or temp is None:
                 continue
 
@@ -529,12 +568,12 @@ class PredictiveSensors(hass.Hass):
 
         if best is None:
             for item in forecast:
-                temp = item.get("temperature")
+                temp = self.as_float(item.get("temperature"))
                 if temp is not None:
-                    return float(temp)
+                    return temp
             return None
 
-        return float(best)
+        return self.as_float(best)
 
     def set_rate_state(self, entity_id, value):
         if not math.isfinite(value):
@@ -558,6 +597,27 @@ class PredictiveSensors(hass.Hass):
             return self.as_float(attr)
         except Exception:
             return None
+
+    def get_room_target_from_helper(self, room_cfg):
+        helper_entity = room_cfg.get("target_input") if isinstance(room_cfg, dict) else None
+        if not isinstance(helper_entity, str) or not helper_entity:
+            return None
+        return self.as_float(self.get_state(helper_entity))
+
+    def get_room_manual_target(self, room_cfg, fallback=None):
+        helper_target = self.get_room_target_from_helper(room_cfg)
+        if helper_target is not None:
+            return helper_target
+
+        manual = self.as_float(room_cfg.get("manual_target")) if isinstance(room_cfg, dict) else None
+        if manual is not None:
+            return manual
+
+        cfg_target = self.as_float(room_cfg.get("target")) if isinstance(room_cfg, dict) else None
+        if cfg_target is not None:
+            return cfg_target
+
+        return fallback
 
     def get_target_step(self, room_cfg, climate_entity):
         cfg_step = self.as_float(room_cfg.get("target_step"))
@@ -655,19 +715,6 @@ class PredictiveSensors(hass.Hass):
         except Exception:
             return default
 
-    def load_system_config(self):
-        return self.load_yaml_file("system_configs.yaml")
-
-    def load_yaml_file(self, filename):
-        path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", filename)
-        )
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return yaml.safe_load(f) or {}
-        except Exception:
-            return {}
-
     def load_history(self):
         now = time.time()
         cutoff = now - (self.window_long_minutes * 60)
@@ -675,6 +722,10 @@ class PredictiveSensors(hass.Hass):
             with open(self.history_file_path, "r", encoding="utf-8") as f:
                 raw = json.load(f) or {}
         except FileNotFoundError:
+            self.log_h(
+                f"PREDIKCIJA: history file ne postoji, start s praznom povijesti | path={self.history_file_path}",
+                level="INFO",
+            )
             return
         except Exception as ex:
             self.log_h(
@@ -684,6 +735,7 @@ class PredictiveSensors(hass.Hass):
             return
 
         restored = []
+        invalid_entries = 0
         for room_name, entries in raw.items():
             if not isinstance(entries, list):
                 continue
@@ -695,6 +747,7 @@ class PredictiveSensors(hass.Hass):
                     ts = float(entry[0])
                     temp = float(entry[1])
                 except Exception:
+                    invalid_entries += 1
                     continue
                 if ts >= cutoff:
                     history.append((ts, temp))
@@ -706,6 +759,11 @@ class PredictiveSensors(hass.Hass):
             self.log_h(
                 f"Vracena povijest predikcije za {', '.join(restored)}",
                 level="INFO",
+            )
+        if invalid_entries:
+            self.log_h(
+                f"PREDIKCIJA: preskoceni neispravni history zapisi | broj={invalid_entries} | path={self.history_file_path}",
+                level="DEBUG",
             )
 
     def save_history(self, now, long_sec):

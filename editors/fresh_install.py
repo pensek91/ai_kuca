@@ -145,7 +145,7 @@ def bootstrap_files():
             (
                 "services:\n"
                 "  appdaemon:\n"
-                "    image: acockburn/appdaemon:latest\n"
+                "    image: acockburn/appdaemon:4.4.2\n"
                 "    container_name: appdaemon\n"
                 "    restart: unless-stopped\n\n"
                 "    env_file:\n"
@@ -153,6 +153,9 @@ def bootstrap_files():
                 "    volumes:\n"
                 "      - ./apps:/conf/apps\n"
                 "      - ./appdaemon.yaml:/conf/appdaemon.yaml\n\n"
+                "      - ./conf/ai_logs:/conf/ai_logs\n"
+                "      - ./conf/dashboards:/conf/dashboards\n"
+                "      - ./conf/namespaces:/conf/namespaces\n\n"
                 "    ports:\n"
                 "      - \"5050:5050\"\n"
             ),

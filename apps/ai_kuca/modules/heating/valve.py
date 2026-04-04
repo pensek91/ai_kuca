@@ -10,12 +10,11 @@
 import os
 from datetime import datetime
 import time
-import yaml
-import appdaemon.plugins.hass.hassapi as hass
+from ai_kuca.core.base_app import BaseApp
 from ai_kuca.core.logger import push_log_to_ha
 
 
-class ValveControl(hass.Hass):
+class ValveControl(BaseApp):
     """
     Klasa za kontrolu ventila grijanja pomoÄ‡u impulsa.
     
@@ -24,13 +23,24 @@ class ValveControl(hass.Hass):
     i kalibracijom kada je pumpa iskljuÄŤena.
     """
     def initialize(self):
+        self.init_base()
+        system_cfg = self.load_system_config()
+        self.log_level = system_cfg.get("logging_level", "INFO")
+        log_cfg = system_cfg.get("ai_kuca_log", {})
+        log_map = system_cfg.get("ai_kuca_log_sensors", {})
+        self.log_sensor_entity = log_map.get(
+            "valve_control", log_cfg.get("sensor_entity", "sensor.ai_kuca_log")
+        )
+        self.log_history_seconds = int(log_cfg.get("history_seconds", 120))
+        self.log_max_items = int(log_cfg.get("max_items", 50))
+        self.version = "V3." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
+        self.log_h(f"AI ventil {self.version} pokrenut", level="INFO")
         """
         Inicijalizira ValveControl skriptu.
         
         UÄŤitava konfiguraciju senzora i ventila, postavlja impulse i pauze,
         te pokreÄ‡e petlju kontrole svakih 10 sekundi.
         """
-        self.version = "V3." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
         system_cfg = self.load_system_config()
         valve_cfg = system_cfg.get("valve_control", {})
         heating_cfg = system_cfg.get("heating_main", {})
@@ -152,6 +162,19 @@ class ValveControl(hass.Hass):
             self.log_h("Preskoci: odmor nakon impulsa", level="DEBUG")
             return
 
+        if not self.ensure_required_sensors(
+            {
+                "flow_sensor": self.flow_sensor,
+                "target_sensor": self.target_sensor,
+                "boiler_sensor": self.boiler_sensor,
+                "outdoor_sensor": self.outdoor_sensor,
+            },
+            module_name="ValveControl",
+            cooldown_sec=900,
+        ):
+            self.log_h("Nedostupni kljucni senzori -> kontrola ventila zaustavljena", level="ERROR")
+            return
+
         pump_state = self.get_state(self.pump_switch)
         if pump_state != "on":
             self.pump_start_time = None
@@ -221,10 +244,11 @@ class ValveControl(hass.Hass):
                 self.log_h("Pauza hot_c2 ON, ali uvjeti za gasenje su zadovoljeni", level="DEBUG")
 
         if overheat_active and self.get_state(self.valve_pause) == "on":
+            # Stage 2 ownership: when overheat raises valve_pause, valve control must stay locked.
             self.pause_due_to_hot_c2 = False
             self.pending_pause_due_to_hot_c2 = False
-            self.log_h("Overheat aktivan -> pauza ventila OFF", level="INFO")
-            self.call_service("input_boolean/turn_off", entity_id=self.valve_pause)
+            self.log_h("Overheat stage2 lock aktivan -> ventil modul ne preuzima kontrolu", level="INFO")
+            return
 
         if self.get_state(self.valve_pause) == "on":
             self.log_h("Preskoci: ventil pauza", level="DEBUG")
@@ -285,7 +309,16 @@ class ValveControl(hass.Hass):
         outdoor_temp = self.get_outdoor_temp_avg()
 
         if boiler_temp is None or outdoor_temp is None:
-            return self.system_enabled
+            self.ensure_required_sensors(
+                {
+                    "boiler_sensor": self.boiler_sensor,
+                    "outdoor_sensor": self.outdoor_sensor,
+                },
+                module_name="ValveControl",
+                cooldown_sec=900,
+            )
+            self.system_enabled = False
+            return False
 
         if boiler_temp < 35.0 or outdoor_temp > 21.0:
             self.system_enabled = False
@@ -361,19 +394,6 @@ class ValveControl(hass.Hass):
             self.active_relay = None
             return False
         return True
-
-    def load_system_config(self):
-        return self.load_yaml_file("system_configs.yaml")
-
-    def load_yaml_file(self, filename):
-        path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", filename)
-        )
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return yaml.safe_load(f) or {}
-        except Exception:
-            return {}
 
     def log_h(self, message, level="INFO"):
         push_log_to_ha(self, message, level, self.log_sensor_entity, self.log_history_seconds, self.log_max_items)

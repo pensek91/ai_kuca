@@ -10,6 +10,12 @@ ai_kuca_log:
   history_seconds: 1800  # čuvaj logove 30 minuta
   max_items: 10          # maksimalno 10 logova
 
+# Validator guardrails i debug mode
+config_validator:
+  dry_run: false
+  debounce_seconds: 4
+  own_write_suppress_seconds: 5
+
 # Postavke pojedinacnog log senzora
 ai_kuca_log_sensors:
   heating_main: sensor.ai_kuca_log_grijanje

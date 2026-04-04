@@ -1,10 +1,10 @@
 import os
-import yaml
-import appdaemon.plugins.hass.hassapi as hass
+from datetime import datetime
+from ai_kuca.core.base_app import BaseApp
 from ai_kuca.core.logger import push_log_to_ha
 
 
-class AIKucaStatus(hass.Hass):
+class AIKucaStatus(BaseApp):
     """
     Klasa za provjeru statusa AI skripta.
     
@@ -12,6 +12,20 @@ class AIKucaStatus(hass.Hass):
     te logira greĹˇke ako neka nedostaje.
     """
     def initialize(self):
+        self.init_base()
+        system_cfg = self.load_system_config()
+        status_cfg = system_cfg.get("ai_kuca_status", {})
+        log_cfg = system_cfg.get("ai_kuca_log", {})
+        log_map = system_cfg.get("ai_kuca_log_sensors", {})
+
+        self.log_level = system_cfg.get("logging_level", "INFO")
+        self.log_sensor_entity = log_map.get(
+            "status", "sensor.ai_kuca_log_status"
+        )
+        self.log_history_seconds = int(log_cfg.get("history_seconds", 120))
+        self.log_max_items = int(log_cfg.get("max_items", 50))
+        self.version = "V1." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
+        self.log_h(f"AI status {self.version} pokrenut", level="INFO")
         """
         Inicijalizira AIKucaStatus skriptu.
         
@@ -37,8 +51,11 @@ class AIKucaStatus(hass.Hass):
                 state="",
                 attributes={"last_level": None, "last_ts": None, "history": []},
             )
-        except Exception:
-            pass
+        except Exception as ex:
+            self.log(
+                f"[STATUS] Init state reset failed | sensor={self.log_sensor_entity} | err={ex}",
+                level="WARNING",
+            )
 
         self.check_delay = int(status_cfg.get("check_delay_sec", 8))
         self.app_names = status_cfg.get("app_names") or []
@@ -65,7 +82,11 @@ class AIKucaStatus(hass.Hass):
         for app in self.app_names:
             try:
                 obj = self.get_app(app)
-            except Exception:
+            except Exception as ex:
+                self.log_h(
+                    f"Provjera statusa | {app} -> exception pri get_app ({ex})",
+                    level="DEBUG",
+                )
                 obj = None
             if obj is None:
                 missing.append(app)
@@ -79,21 +100,8 @@ class AIKucaStatus(hass.Hass):
             self.log(msg, level="ERROR")
             return
 
-        msg = "[AI_KUCA] AI_Kuca program je pokrenut bez gresaka"
-        push_log_to_ha(self, msg, "WARNING", self.log_sensor_entity, self.log_history_seconds, self.log_max_items)
-        self.log(msg, level="WARNING")
-
-    def load_system_config(self):
-        return self.load_yaml_file("system_configs.yaml")
-
-    def load_yaml_file(self, filename):
-        path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", filename)
-        )
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return yaml.safe_load(f) or {}
-        except Exception:
-            return {}
+        msg = "SmartHome system je pokrenut bez greske"
+        push_log_to_ha(self, msg, "INFO", self.log_sensor_entity, self.log_history_seconds, self.log_max_items)
+        self.log(msg, level="INFO")
 
 

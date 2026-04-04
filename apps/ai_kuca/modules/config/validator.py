@@ -1,12 +1,21 @@
 import os
+import re
 from datetime import datetime, timezone
 import time
 import yaml
-import appdaemon.plugins.hass.hassapi as hass
+from ai_kuca.core.base_app import BaseApp
 from ai_kuca.core.logger import push_log_to_ha
+from ai_kuca.modules.validator import (
+    ValidatorStateStore,
+    ValidatorGuardrails,
+    StartupValidator,
+    RuntimeWatcher,
+    UIManager,
+)
+from ai_kuca.modules.validator import ui_helpers
 
 
-class AIConfigValidator(hass.Hass):
+class AIConfigValidator(BaseApp):
     """Proverava konfiguraciju pre pokretanja ostalih AI_KUCA aplikacija.
 
     Svaki put kada se pokrene, proverava `system_configs.yaml` i `room_configs.yaml`
@@ -17,6 +26,16 @@ class AIConfigValidator(hass.Hass):
     """
 
     def initialize(self):
+        self.init_base()
+        system_cfg = self.load_system_config()
+        self.log_level = system_cfg.get("logging_level", "INFO")
+        log_cfg = system_cfg.get("ai_kuca_log", {})
+        log_map = system_cfg.get("ai_kuca_log_sensors", {})
+        self.log_sensor_entity = log_map.get("config", log_cfg.get("sensor_entity", "sensor.ai_kuca_log"))
+        self.log_history_seconds = int(log_cfg.get("history_seconds", 120))
+        self.log_max_items = int(log_cfg.get("max_items", 50))
+        self.version = "V1." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
+        self.log_h(f"AI validator konfiguracije {self.version} pokrenut", level="INFO")
         # === Popuni ai_kuca_duration_select s trajanjem boosta ===
         try:
             duration_options = ["NONE", "5 minuta", "15 minuta", "30 minuta", "60 minuta", "120 minuta"]
@@ -29,9 +48,7 @@ class AIConfigValidator(hass.Hass):
             self.log(f"[CONFIG] Greška pri popunjavanju ai_kuca_duration_select: {e}", level="ERROR")
         # === Popuni ai_kuca_boost_select s imenima soba iz room_configs.yaml ===
         try:
-            room_cfg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "config", "room_configs.yaml"))
-            with open(room_cfg_path, "r", encoding="utf-8") as f:
-                room_cfg = yaml.safe_load(f) or {}
+            room_cfg = self.load_yaml_file("room_configs.yaml") or {}
             room_names = list(room_cfg.keys())
             boost_options = ["NONE"] + room_names
             self.call_service(
@@ -82,8 +99,6 @@ class AIConfigValidator(hass.Hass):
         self.turbo_boost_duration = "input_select.turbo_boost_duration"
         self.ai_kuca_boost_select = "input_select.ai_kuca_boost_select"
         self.ai_kuca_duration_select = "input_select.ai_kuca_duration_select"
-        self.version = "V1." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
-
         # Logging and status
         self.log_level = "INFO"
         self.log_sensor_entity = "sensor.ai_kuca_log"
@@ -97,6 +112,24 @@ class AIConfigValidator(hass.Hass):
         self.log_history_seconds = int(log_cfg.get("history_seconds", self.log_history_seconds))
         self.log_max_items = int(log_cfg.get("max_items", self.log_max_items))
         self.status_sensor = log_map.get("config_status", "sensor.ai_kuca_config")
+        validator_cfg = system_cfg.get("config_validator", {}) or {}
+        self.validator_dry_run = self._coerce_bool(
+            validator_cfg.get("dry_run", system_cfg.get("dry_run", False)),
+            default=False,
+        )
+        self.validator_debounce_sec = float(validator_cfg.get("debounce_seconds", 4.0))
+        self.validator_own_write_suppress_sec = float(validator_cfg.get("own_write_suppress_seconds", 5.0))
+        self.validator_ui_refresh_sec = max(10.0, float(validator_cfg.get("ui_refresh_seconds", 15.0)))
+        self.validator_state_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "config", "validator_runtime_state.json")
+        )
+        self._watcher_debounce_handle = None
+        self._watcher_pending_source = "init"
+        self._state_store = ValidatorStateStore(self.validator_state_path, self.log)
+        self._guardrails = ValidatorGuardrails(
+            self._state_store,
+            own_write_window_sec=self.validator_own_write_suppress_sec,
+        )
 
         # === AUTOMATSKO POPUNJAVANJE SVIH input_select entiteta ===
         all_entities = list(self.get_state().keys())
@@ -137,11 +170,17 @@ class AIConfigValidator(hass.Hass):
             else:
                 # Za sve ostale, ostavi default opcije
                 options = ["NONE", "<izaberi>"]
-            self.call_service(
-                "input_select/set_options",
-                entity_id=dropdown,
-                options=options
-            )
+            try:
+                self.call_service(
+                    "input_select/set_options",
+                    entity_id=dropdown,
+                    options=options
+                )
+            except Exception as ex:
+                self.log(
+                    f"[CONFIG] Preskacem dropdown options update ({dropdown}): {ex}",
+                    level="WARNING",
+                )
         self.ai_kuca_heating_eco_switch = "input_select.ai_kuca_heating_eco_switch"
         self.ai_kuca_heating_overheat_switch = "input_select.ai_kuca_heating_overheat_switch"
         self.ai_kuca_pump_switch = "input_select.ai_kuca_pump_switch"
@@ -296,25 +335,129 @@ class AIConfigValidator(hass.Hass):
         self.listen_state(self._on_room_selected, self.room_select)
 
         self.run_in(self._ensure_ui_helpers, 1)
+        self.run_in(self._ensure_room_target_helpers, 2)
+
+        self._startup_validator = StartupValidator(
+            state_store=self._state_store,
+            ensure_helpers=self._ensure_ui_helpers,
+            ensure_room_targets=self._ensure_room_target_helpers,
+            validate_config=self.check_config,
+            validate_entities=self._validate_required_entities_exist,
+            compute_hash=self._compute_config_hash,
+            logger=self.log,
+        )
+        self._runtime_watcher = RuntimeWatcher(
+            state_store=self._state_store,
+            guardrails=self._guardrails,
+            compute_hash=self._compute_config_hash,
+            validate_config=self.check_config,
+            logger=self.log,
+        )
+        self._ui_manager = UIManager(
+            state_store=self._state_store,
+            compute_hash=self._compute_config_hash,
+            get_mode=lambda: self.get_state(self.config_mode),
+            show_config=self._show_current_config,
+            populate_dropdowns=self._populate_all_dropdowns,
+            load_values=self._load_system_config_values,
+            update_options=self._update_ui_select_options,
+            logger=self.log,
+        )
 
         self.log(f"[CONFIG] AI Config Validator {self.version} pokrenut")
+        self.run_in(self._run_startup_validator_phase, 2)
+        self.run_in(self._run_ui_manager_phase_startup, 3)
+        self.run_every(self._run_ui_manager_phase_dirty, "now", self.validator_ui_refresh_sec)
+        self.log(
+            f"[CONFIG] UI manager periodic refresh interval: {self.validator_ui_refresh_sec:.0f}s",
+            level="INFO",
+        )
 
-        # PrikaĹľi trenutne postavke u UI
-        self.run_in(self._show_current_config, 1)
-        
-        # Popuni sve dropdown-ove sa dostupnim entitetima na startup
-        self.run_in(self._populate_all_dropdowns, 2)
-        
-        # UÄŤitaj vrijednosti iz system_configs.yaml na startup
-        self.run_in(self._load_system_config_values, 3)
-        
-        # Populiraj dropdown opcije sa dostupnim entitetima iz HA
-        self.run_in(self._update_ui_select_options, 3)
+    def _coerce_bool(self, value, default=False):
+        if isinstance(value, bool):
+            return value
+        if value is None:
+            return default
+        if isinstance(value, (int, float)):
+            return value != 0
+        if isinstance(value, str):
+            text = value.strip().lower()
+            if text in ("1", "true", "yes", "y", "on"):
+                return True
+            if text in ("0", "false", "no", "n", "off", ""):
+                return False
+        return default
 
-        # Run check after all initialization is complete (now safe to call check_config)
-        config_check_interval = int(system_cfg.get("config_validator_interval", 300))
-        self.run_in(self.check_config, 2)  # 2 seconds after all init complete
-        self.run_every(self.check_config, "now", config_check_interval)
+    def _normalize_room_slug(self, room_name):
+        base = str(room_name or "").strip().lower().replace(" ", "_")
+        base = re.sub(r"[^a-z0-9_]", "", base)
+        return base or "room"
+
+    def _room_target_helper_entity(self, room_name):
+        return f"input_number.ai_kuca_target_{self._normalize_room_slug(room_name)}"
+
+    def _ensure_room_target_helper(self, room_name, initial_target=None):
+        entity_id = self._room_target_helper_entity(room_name)
+        created = False
+        if self.get_state(entity_id) is None:
+            try:
+                self.call_service(
+                    "input_number/create",
+                    entity_id=entity_id,
+                    name=f"AI Kuća Target {room_name}",
+                    min=8,
+                    max=35,
+                    step=0.5,
+                    unit_of_measurement="°C",
+                    mode="slider",
+                    initial=21.0,
+                )
+                created = True
+                self.log(f"[CONFIG] Created room target helper {entity_id}", level="INFO")
+            except Exception as ex:
+                self.log(f"[CONFIG] Unable to create room target helper {entity_id}: {ex}", level="WARNING")
+
+        # Do not overwrite user-adjusted helper values on every restart.
+        # Seed value only when helper is newly created or if current state is missing/invalid.
+        helper_state = self.get_state(entity_id)
+        should_seed_initial = created or helper_state in (None, "unknown", "unavailable", "")
+        if initial_target is not None and should_seed_initial and helper_state is not None:
+            try:
+                self.call_service(
+                    "input_number/set_value",
+                    entity_id=entity_id,
+                    value=float(initial_target),
+                )
+            except Exception as ex:
+                self.log(f"[CONFIG] Unable to set initial value for {entity_id}: {ex}", level="DEBUG")
+
+        return entity_id
+
+    def _delete_room_target_helper(self, room_name):
+        entity_id = self._room_target_helper_entity(room_name)
+        if self.get_state(entity_id) is None:
+            return
+        try:
+            self.call_service("input_number/delete", entity_id=entity_id)
+            self.log(f"[CONFIG] Deleted room target helper {entity_id}", level="INFO")
+        except Exception as ex:
+            self.log(f"[CONFIG] Unable to delete room target helper {entity_id}: {ex}", level="WARNING")
+
+    def _ensure_room_target_helpers(self, kwargs=None):
+        room_cfg = self.load_yaml_file("room_configs.yaml") or {}
+        for room_name, cfg in room_cfg.items():
+            cfg = cfg if isinstance(cfg, dict) else {}
+            try:
+                target_value = float(cfg.get("target", 21.0))
+            except Exception:
+                target_value = 21.0
+            helper_entity = self._ensure_room_target_helper(room_name, initial_target=target_value)
+            cfg["target_input"] = helper_entity
+            room_cfg[room_name] = cfg
+        try:
+            self._save_yaml_file("room_configs.yaml", room_cfg)
+        except Exception as ex:
+            self.log(f"[CONFIG] Unable to persist room target helpers in room_configs.yaml: {ex}", level="WARNING")
 
     def check_config(self, kwargs):
         system_cfg = self.load_system_config()
@@ -355,7 +498,6 @@ class AIConfigValidator(hass.Hass):
         require("valve_control.target_sensor", valve.get("target_sensor"))
         require("valve_control.valve_open", valve.get("valve_open"))
         require("valve_control.valve_close", valve.get("valve_close"))
-        require("valve_control.pump_switch", valve.get("pump_switch"))
         require("valve_control.valve_pause", valve.get("valve_pause"))
         require("valve_control.boiler_sensor", valve.get("boiler_sensor"))
         require("valve_control.outdoor_sensor", valve.get("outdoor_sensor"))
@@ -467,10 +609,95 @@ class AIConfigValidator(hass.Hass):
         try:
             with open(path, "w", encoding="utf-8") as f:
                 yaml.safe_dump(data, f, sort_keys=False, allow_unicode=True)
+            self._mark_validator_write(f"save_yaml:{filename}")
+            self._runtime_watch_event(source=f"validator_write:{filename}")
             self.log(f"[CONFIG] Datoteka sprljena: {path}", level="INFO")
         except Exception as ex:
             self.log(f"[CONFIG] GreĹˇka pri pisanju datoteke: {path} -> {ex}", level="ERROR")
             raise
+
+    def _load_validator_state(self):
+        return self._state_store.load()
+
+    def _save_validator_state(self, state):
+        return self._state_store.save(state)
+
+    def _compute_config_hash(self):
+        payload = {
+            "system": self.load_yaml_file("system_configs.yaml") or {},
+            "rooms": self.load_yaml_file("room_configs.yaml") or {},
+        }
+        blob = yaml.safe_dump(payload, sort_keys=True, allow_unicode=False)
+        import hashlib
+
+        return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+    def _apply_rate_limited(self, state):
+        return self._guardrails.allow_apply(state)
+
+    def _mark_validator_write(self, source):
+        self._state_store.mark_write(source, time.time())
+
+    def _is_own_write_window(self):
+        return self._guardrails.in_own_write_window()
+
+    def _runtime_watch_event(self, source):
+        self._watcher_pending_source = str(source or "runtime_event")
+        if self._watcher_debounce_handle is not None:
+            try:
+                self.cancel_timer(self._watcher_debounce_handle)
+            except Exception as ex:
+                self.log(
+                    f"[CONFIG] Debounce timer cancel skipped ({ex})",
+                    level="DEBUG",
+                )
+        self._watcher_debounce_handle = self.run_in(self._process_runtime_watcher_phase, self.validator_debounce_sec)
+
+    def _run_startup_validator_phase(self, kwargs):
+        self._startup_validator.run(dry_run=self.validator_dry_run)
+
+    def _validate_required_entities_exist(self):
+        system_cfg = self.load_system_config() or {}
+        checks = []
+
+        heating = system_cfg.get("heating_main", {}) or {}
+        checks.extend([
+            heating.get("active_switch"),
+            heating.get("eco_switch"),
+            heating.get("overheat_switch"),
+            heating.get("flow_sensor"),
+            heating.get("boiler_sensor"),
+            heating.get("outdoor_sensor"),
+        ])
+
+        missing_entities = []
+        for entity_id in checks:
+            if not entity_id:
+                continue
+            if self.get_state(entity_id) is None:
+                missing_entities.append(entity_id)
+
+        if missing_entities:
+            self.log(
+                f"[CONFIG] Entity existence check warning: {', '.join(missing_entities)}",
+                level="WARNING",
+            )
+        else:
+            self.log("[CONFIG] Entity existence check OK", level="INFO")
+
+    def _process_runtime_watcher_phase(self, kwargs):
+        self._watcher_debounce_handle = None
+        source = getattr(self, "_watcher_pending_source", "runtime_event")
+        self._runtime_watcher.process(source=source, dry_run=self.validator_dry_run)
+
+    def _run_ui_manager_phase_startup(self, kwargs):
+        self._run_ui_manager_phase("startup", force=True)
+
+    def _run_ui_manager_phase_dirty(self, kwargs):
+        self._run_ui_manager_phase("dirty_flag", force=False)
+
+    def _run_ui_manager_phase(self, reason, force=False):
+        self._ui_manager.run(reason=reason, force=force, dry_run=self.validator_dry_run)
 
     def _get_number_state(self, entity_id):
         """UÄŤitaj vrijednost iz input_number entiteta kao float ili None."""
@@ -490,6 +717,7 @@ class AIConfigValidator(hass.Hass):
         # If HA users edit config text, we keep it as the source of truth until they
         # explicitly request a reload/write via the reload toggle.
         self.log(f"Config text updated in {entity}", level="DEBUG")
+        self._runtime_watch_event(source=f"config_text:{entity}")
 
     def _on_reload_toggle(self, entity, attribute, old, new, kwargs):
         """Handler when the reload boolean is toggled in Home Assistant."""
@@ -551,6 +779,7 @@ class AIConfigValidator(hass.Hass):
             os.makedirs(os.path.dirname(path), exist_ok=True)
             with open(path, "w", encoding="utf-8") as f:
                 yaml.safe_dump(data, f, sort_keys=False, allow_unicode=True)
+            self._mark_validator_write(f"write_yaml:{filename}")
             self.log(f"Wrote config to {path}", level="INFO")
             return True
         except Exception as ex:
@@ -567,9 +796,24 @@ class AIConfigValidator(hass.Hass):
         # Re-validate immediately
         self.check_config({})
 
-        # Ask AppDaemon to reload apps so changes take effect
+        # Ask AppDaemon to reload apps so changes take effect.
+        state = self._load_validator_state()
+        allowed, history_10m = self._apply_rate_limited(state)
+        if not allowed:
+            self.log("[CONFIG] Reload suppressed by guardrails", level="WARNING")
+            return
+
+        if self.validator_dry_run:
+            self.log("[CONFIG] dry_run=true -> appdaemon reload skipped", level="INFO")
+            return
+
         try:
             self.call_service("appdaemon/reload")
+            history_10m.append(time.time())
+            state["apply_history"] = history_10m
+            state["last_apply_ts"] = time.time()
+            state["source"] = "auto_reload"
+            self._save_validator_state(state)
             self.log("AppDaemon reload triggered successfully", level="INFO")
         except Exception as ex:
             self.log(
@@ -578,112 +822,13 @@ class AIConfigValidator(hass.Hass):
             )
 
     def _ensure_ui_helpers(self, kwargs=None):
-        """Ensure all HA helpers from HA_helpers.yaml exist (input_text, input_boolean, input_select, input_number)."""
-        helpers = []
-        # input_boolean
-        for entity_id in [
-            self.ai_heating_active, self.ai_heating_eco, self.ai_kuca_reload_config, self.ai_kuca_generate_config,
-            self.ai_kuca_room_builder_generate, self.ai_kuca_room_builder_delete
-        ]:
-            helpers.append({"entity_id": entity_id, "service": "input_boolean/create", "name": entity_id.split(".")[1].replace("_", " ").title()})
-
-        # input_text
-        for entity_id in [
-            self.ai_kuca_system_config, self.ai_kuca_room_config, self.ai_kuca_room_builder_name, self.ai_kuca_room_builder_target,
-            self.ai_kuca_room_builder_windows, self.ai_kuca_outdoor_temp_sensors, self.ai_kuca_climate_entities
-        ]:
-            helpers.append({"entity_id": entity_id, "service": "input_text/create", "name": entity_id.split(".")[1].replace("_", " ").title(), "initial": ""})
-
-        # input_select
-        # Prvo ai_kuca_config_mode s YAML opcijama
-        helpers.append({
-            "entity_id": self.ai_kuca_config_mode,
-            "service": "input_select/create",
-            "name": self.ai_kuca_config_mode.split(".")[1].replace("_", " ").title(),
-            "options": ["-- Odaberi --", "System Config", "Room Config"]
-        })
-        # Ostali input_select entiteti
-        for entity_id in [
-            self.ai_kuca_room_select, self.ai_kuca_heating_flow_sensor, self.ai_kuca_heating_boiler_sensor,
-            self.ai_kuca_heating_outdoor_sensor, self.ai_kuca_heating_active_switch, self.ai_kuca_heating_eco_switch,
-            self.ai_kuca_heating_overheat_switch, self.ai_kuca_pump_switch, self.ai_kuca_valve_pause, self.ai_kuca_valve_open,
-            self.ai_kuca_valve_close, self.ai_kuca_flow_sensor_2, self.ai_kuca_target_sensor, self.ai_kuca_room_builder_climate,
-            self.ai_kuca_room_builder_temp_sensor, self.ai_kuca_room_builder_humidity_sensor, self.ai_kuca_room_builder_fan,
-            self.boost_soba, self.turbo_boost_duration, self.ai_kuca_boost_select, self.ai_kuca_duration_select
-        ]:
-            helpers.append({"entity_id": entity_id, "service": "input_select/create", "name": entity_id.split(".")[1].replace("_", " ").title(), "options": ["<izaberi>"]})
-
-        # input_number (samo kreiranje, vrijednosti se postavljaju kroz HA UI)
-        for entity_id in self.input_numbers:
-            helpers.append({"entity_id": entity_id, "service": "input_number/create", "name": entity_id.split(".")[1].replace("_", " ").title()})
-
-        for helper in helpers:
-            if self.get_state(helper["entity_id"]) is not None:
-                continue
-            try:
-                self.call_service(
-                    helper["service"],
-                    entity_id=helper["entity_id"],
-                    name=helper.get("name"),
-                    initial=helper.get("initial"),
-                    options=helper.get("options"),
-                )
-                self.log(f"[CONFIG] Created helper {helper['entity_id']} via {helper['service']}", level="DEBUG")
-            except Exception as ex:
-                self.log(f"[CONFIG] Unable to create helper {helper['entity_id']}: {ex}", level="WARNING")
+        ui_helpers.ensure_ui_helpers(self)
 
     def _show_current_config(self, kwargs):
-        """Load and display current config summary from disk."""
-        try:
-            system_cfg = self.load_yaml_file("system_configs.yaml") or {}
-            room_cfg = self.load_yaml_file("room_configs.yaml") or {}
-            
-            # PrikaĹľi broj soba kao summary
-            rooms = list(room_cfg.keys()) if room_cfg else []
-            summary_text = f"UÄŤitane sobe: {', '.join(rooms) if rooms else 'nema soba'}"
-
-            # PrikaĹľi status
-            system_status = "System config: OK" if system_cfg else "System config: EMPTY"
-            self.log(f"[CONFIG] {system_status} | {summary_text}", level="INFO")
-            
-        except Exception as ex:
-            self.log(f"[CONFIG] GreĹˇka pri uÄŤitavanju config datoteka: {ex}", level="WARNING")
+        ui_helpers.show_current_config(self)
 
     def _update_ui_select_options(self, kwargs):
-        """Populate dropdown helper options from current HA entity registry."""
-        entities = self.get_state() or {}
-
-        sensors = sorted([e for e in entities.keys() if e.startswith("sensor.")])
-        switches = sorted([e for e in entities.keys() if e.startswith("switch.")])
-        input_bools = sorted([e for e in entities.keys() if e.startswith("input_boolean.")])
-
-        select_mapping = {
-            self.select_flow_sensor: sensors,
-            self.select_boiler_sensor: sensors,
-            self.select_active_switch: input_bools,
-            self.select_eco_switch: input_bools,
-            self.select_overheat_switch: input_bools,
-            self.select_pump_switch: switches,
-            self.room_builder_climate: [e for e in entities.keys() if e.startswith("climate.")],
-            self.room_builder_temp_sensor: sensors,
-            self.room_builder_humidity_sensor: sensors,
-            self.room_builder_fan: [e for e in entities.keys() if e.startswith("fan.")],
-        }
-
-        for entity_id, options in select_mapping.items():
-            if self.get_state(entity_id) is None:
-                continue
-            try:
-                self.call_service(
-                    "input_select/set_options",
-                    entity_id=entity_id,
-                    options=options,
-                )
-            except Exception as ex:
-                self.log(
-                    f"[CONFIG] Unable to update options for {entity_id}: {ex}",
-                    level="WARNING",
-                )
+        ui_helpers.update_ui_select_options(self)
 
     def _on_build_config(self, entity, attribute, old, new, kwargs):
         """Build system_configs.yaml content from selected dropdown values and ALL numeric parameters."""
@@ -953,11 +1098,16 @@ class AIConfigValidator(hass.Hass):
             room_cfg[room_name]["fan"] = fan
 
         target = (self.get_state(self.room_builder_target) or "").strip()
+        target_value = None
         if target:
             try:
-                room_cfg[room_name]["target"] = float(target)
+                target_value = float(target)
+                room_cfg[room_name]["target"] = target_value
             except Exception:
                 room_cfg[room_name]["target"] = target
+
+        helper_entity = self._ensure_room_target_helper(room_name, initial_target=target_value)
+        room_cfg[room_name]["target_input"] = helper_entity
 
         windows = (self.get_state(self.room_builder_window_sensors) or "").strip()
         if windows:
@@ -996,6 +1146,7 @@ class AIConfigValidator(hass.Hass):
             try:
                 self._save_yaml_file("room_configs.yaml", room_cfg)
                 self.log(f"[CONFIG] Soba '{room_to_delete}' obrisana iz room_configs.yaml", level="INFO")
+                self._delete_room_target_helper(room_to_delete)
                 # Triggeraj reload automatski nakon brisanja
                 self.run_in(self._on_reload_toggle_auto, 1)
                 # Resetuj sve poljenavigiramo
@@ -1016,257 +1167,16 @@ class AIConfigValidator(hass.Hass):
         self.set_state(self.room_builder_delete, state="off")
 
     def _on_config_mode_changed(self, entity, attribute, old, new, kwargs):
-        """Handler kada se promijeni config_mode dropdown (System Config / Room Config)."""
-        mode = (str(new) or "").strip().lower()
-        
-        self.log(f"[CONFIG] config_mode promijenjeno: mode='{mode}' (raw='{new}')", level="INFO")
-        
-        if mode == "room config":
-            self.log("[CONFIG] Room Config mode odabran - uÄŤitavanje soba", level="INFO")
-            # Popuni room_select sa listom dostupnih soba
-            room_cfg = self.load_yaml_file("room_configs.yaml") or {}
-            rooms = list(room_cfg.keys()) if room_cfg else []
-            
-            # Kreiraj options: NONE + sve sobe
-            options = ["NONE"] + sorted(rooms)
-            
-            try:
-                self.call_service(
-                    "input_select/set_options",
-                    entity_id=self.room_select,
-                    options=options,
-                )
-                self.log(f"[CONFIG] Popunjene dostupne sobe: {rooms}", level="INFO")
-            except Exception as ex:
-                self.log(f"[CONFIG] GreĹˇka pri popunjavanju room_select: {ex}", level="WARNING")
-        
-        elif mode == "system config":
-            self.log("[CONFIG] System Config mode odabran - uÄŤitavanje vrijednosti", level="INFO")
-            # Resetaj room_select na NONE
-            self.set_state(self.room_select, state="NONE")
-            
-            # UÄŤitaj sve dostupne entitete iz HA sa zakaĹˇnjenjem
-            self.run_in(self._populate_all_dropdowns, 0.1)
-            
-            # UÄŤitaj trenutne vrijednosti iz system_configs.yaml
-            self.run_in(self._load_system_config_values, 0.2)
-        else:
-            self.log(f"[CONFIG] Nepoznat mode: '{mode}' - neÄ‡e se niĹˇta uÄŤitati", level="WARNING")
+        ui_helpers.on_config_mode_changed(self, new)
 
     def _populate_all_dropdowns(self, kwargs):
-        """Popuni sve dropdown-ove sa dostupnim entitetima iz HA."""
-        self.log("[CONFIG] Pokrenuta _populate_all_dropdowns()", level="INFO")
-        entities = self.get_state() or {}
-        
-        sensors = sorted([e for e in entities.keys() if e.startswith("sensor.")])
-        switches = sorted([e for e in entities.keys() if e.startswith("switch.")])
-        climate = sorted([e for e in entities.keys() if e.startswith("climate.")])
-        fans = sorted([e for e in entities.keys() if e.startswith("fan.")])
-        input_bools = sorted([e for e in entities.keys() if e.startswith("input_boolean.")])
-        
-        self.log(f"[CONFIG] PronaÄ‘eni entiteti: sensors={len(sensors)}, switches={len(switches)}, climate={len(climate)}, fans={len(fans)}, input_bools={len(input_bools)}", level="INFO")
-        
-        # Options za svaki dropdown (NONE + dostupni entiteti)
-        options_map = {
-            self.select_flow_sensor: ["NONE"] + sensors,
-            self.select_boiler_sensor: ["NONE"] + sensors,
-            self.select_active_switch: ["NONE"] + input_bools,
-            self.select_eco_switch: ["NONE"] + input_bools,
-            self.select_overheat_switch: ["NONE"] + input_bools,
-            self.select_pump_switch: ["NONE"] + switches,
-            self.select_valve_pause: ["NONE"] + input_bools,
-            self.select_valve_open: ["NONE"] + switches,
-            self.select_valve_close: ["NONE"] + switches,
-            self.select_flow_sensor_2: ["NONE"] + sensors,
-            self.select_target_sensor: ["NONE"] + sensors,
-            self.room_builder_climate: ["NONE"] + climate,
-            self.room_builder_temp_sensor: ["NONE"] + sensors,
-            self.room_builder_humidity_sensor: ["NONE"] + sensors,
-            self.room_builder_fan: ["NONE"] + fans,
-        }
-        
-        for entity_id, options in options_map.items():
-            try:
-                self.call_service(
-                    "input_select/set_options",
-                    entity_id=entity_id,
-                    options=options,
-                )
-                self.log(f"[CONFIG] Popunjeni {entity_id} sa {len(options)} opcija", level="INFO")
-            except Exception as ex:
-                self.log(f"[CONFIG] GreĹˇka pri popunjavanju {entity_id}: {ex}", level="WARNING")
+        ui_helpers.populate_all_dropdowns(self)
 
     def _load_system_config_values(self, kwargs):
-        """UÄŤitaj trenutne vrijednosti iz system_configs.yaml u dropdown-ove."""
-        self.log("[CONFIG] Pokrenuta _load_system_config_values()", level="INFO")
-        # Prvo popuni dostupne sobe u room_select (ÄŤak i ako je koji drugi mod aktivan)
-        room_cfg = self.load_yaml_file("room_configs.yaml") or {}
-        rooms = list(room_cfg.keys()) if room_cfg else []
-        room_options = ["NONE"] + sorted(rooms)
-        
-        self.log(f"[CONFIG] Dostupne sobe: {rooms}", level="INFO")
-        
-        try:
-            self.call_service(
-                "input_select/set_options",
-                entity_id=self.room_select,
-                options=room_options,
-            )
-            self.log(f"[CONFIG] Popunjeni room_select sa {len(room_options)} opcija", level="INFO")
-        except Exception as ex:
-            self.log(f"[CONFIG] GreĹˇka pri postavljanju room_select opcija: {ex}", level="WARNING")
-        
-        # UÄŤitaj system config vrijednosti
-        system_cfg = self.load_yaml_file("system_configs.yaml") or {}
-        
-        heating = system_cfg.get("heating_main", {}) or {}
-        pump = system_cfg.get("pump", {}) or {}
-        overheat = system_cfg.get("overheat", {}) or {}
-        valve_control = system_cfg.get("valve_control", {}) or {}
-        
-        self.log(f"[CONFIG] UÄŤitano iz system_configs.yaml: heating, pump, overheat, valve_control sekcije", level="INFO")
-        
-        # Postavi vrijednosti u dropdown-ove
-        dropdown_map = {
-            self.select_flow_sensor: heating.get("flow_sensor", "NONE"),
-            self.select_boiler_sensor: heating.get("boiler_sensor", "NONE"),
-            self.select_active_switch: heating.get("active_switch", "NONE"),
-            self.select_eco_switch: heating.get("eco_switch", "NONE"),
-            self.select_overheat_switch: heating.get("overheat_switch", "NONE"),
-            self.select_pump_switch: pump.get("pump_switch", "NONE"),
-            self.select_valve_pause: overheat.get("valve_pause", "NONE"),
-            self.select_valve_open: overheat.get("valve_open", "NONE"),
-            self.select_valve_close: valve_control.get("valve_close", "NONE"),
-            self.select_flow_sensor_2: valve_control.get("flow_sensor_2", "NONE"),
-            self.select_target_sensor: valve_control.get("target_sensor", "NONE"),
-        }
-        
-        for entity_id, value in dropdown_map.items():
-            try:
-                if value and value != "NONE":
-                    self.set_state(entity_id, state=value)
-                else:
-                    self.set_state(entity_id, state="NONE")
-                self.log(f"[CONFIG] Postavio {entity_id} = {value}", level="INFO")
-            except Exception as ex:
-                self.log(f"[CONFIG] GreĹˇka pri postavljanju {entity_id}: {ex}", level="WARNING")
-        
-        # UÄŤitaj outdoor_temp_sensors kao comma-separated listu
-        outdoor_sensors = heating.get("outdoor_temp_sensors", []) or []
-        if outdoor_sensors and isinstance(outdoor_sensors, list):
-            outdoor_sensors_str = ", ".join(outdoor_sensors)
-            try:
-                self.set_state(self.outdoor_temp_sensors_text, state=outdoor_sensors_str)
-                self.log(f"[CONFIG] Postavio outdoor_temp_sensors = {outdoor_sensors_str}", level="INFO")
-            except Exception as ex:
-                self.log(f"[CONFIG] GreĹˇka pri postavljanju outdoor_temp_sensors: {ex}", level="WARNING")
-        
-        # ========== UÄŚITAJ SVE INPUT_NUMBER VRIJEDNOSTI IZ YAML ==========
-        predictive = system_cfg.get("predictive", {}) or {}
-        ventilation = system_cfg.get("ventilation", {}) or {}
-        
-        # Helper za postavljanje input_number vrijednosti
-        def set_number(entity_id, value, default=None):
-            if value is not None:
-                try:
-                    self.set_state(entity_id, state=str(value))
-                except Exception as ex:
-                    self.log(f"[CONFIG] GreĹˇka pri postavljanju {entity_id}: {ex}", level="WARNING")
-        
-        # Heating Main
-        set_number(self.param_max_room_temp, heating.get("max_room_temp"))
-        set_number(self.param_min_room_temp, heating.get("min_room_temp"))
-        set_number(self.param_eco_delta, heating.get("eco_delta"))
-        
-        # Overheat
-        set_number(self.param_overheat_loop_interval, overheat.get("main_loop_interval"))
-        set_number(self.param_stage1_on, overheat.get("stage1_on"))
-        set_number(self.param_stage1_off, overheat.get("stage1_off"))
-        set_number(self.param_stage2_on, overheat.get("stage2_on"))
-        set_number(self.param_stage2_off, overheat.get("stage2_off"))
-        
-        # Valve Control
-        set_number(self.param_valve_start_delay, valve_control.get("start_delay"))
-        set_number(self.param_valve_deadband, valve_control.get("deadband"))
-        set_number(self.param_valve_min_pulse, valve_control.get("min_base_pulse"))
-        set_number(self.param_valve_max_pulse, valve_control.get("max_base_pulse"))
-        set_number(self.param_valve_max_error, valve_control.get("max_error"))
-        set_number(self.param_pump_start_delay, valve_control.get("pump_start_delay"))
-        set_number(self.param_pump_off_delay, valve_control.get("pump_off_delay"))
-        set_number(self.param_pump_cooldown, valve_control.get("cooldown_after_pulse"))
-        
-        # Pump
-        set_number(self.param_pump_min_on, pump.get("min_on_seconds"))
-        set_number(self.param_pump_min_off, pump.get("min_off_seconds"))
-        set_number(self.param_pump_loop_interval, pump.get("main_loop_interval"))
-        
-        # Predictive
-        set_number(self.param_pred_window_short, predictive.get("window_short_minutes"))
-        set_number(self.param_pred_window_long, predictive.get("window_long_minutes"))
-        set_number(self.param_pred_min_points_short, predictive.get("min_points_short"))
-        set_number(self.param_pred_min_points_long, predictive.get("min_points_long"))
-        set_number(self.param_pred_loss_coeff, predictive.get("loss_coeff_default"))
-        set_number(self.param_pred_window_mult, predictive.get("window_loss_multiplier"))
-        set_number(self.param_pred_weight_short, predictive.get("weight_short"))
-        set_number(self.param_pred_weight_long, predictive.get("weight_long"))
-        
-        # Ventilation
-        set_number(self.param_vent_delta_on, ventilation.get("delta_on"))
-        set_number(self.param_vent_delta_off, ventilation.get("delta_off"))
-        set_number(self.param_vent_abs_on, ventilation.get("abs_on"))
-        set_number(self.param_vent_abs_off, ventilation.get("abs_off"))
-        set_number(self.param_vent_min_on_sec, ventilation.get("min_on_sec"))
-        set_number(self.param_vent_min_off_sec, ventilation.get("min_off_sec"))
-        set_number(self.param_vent_outdoor_max, ventilation.get("outdoor_humidity_max"))
-        set_number(self.param_vent_interval, ventilation.get("interval_sec"))
-        
-        self.log("[CONFIG] UÄŤitane sve vrijednosti iz system_configs.yaml", level="INFO")
+        ui_helpers.load_system_config_values(self)
 
     def _on_room_selected(self, entity, attribute, old, new, kwargs):
-        """Handler kada se odabere soba iz room_select dropdown."""
-        room_name = (str(new) or "").strip()
-        
-        if room_name == "NONE" or not room_name:
-            # Resetaj sva polja
-            self.set_state(self.room_builder_name, state="")
-            self.set_state(self.room_builder_target, state="21.0")
-            self.set_state(self.room_builder_climate, state="NONE")
-            self.set_state(self.room_builder_temp_sensor, state="NONE")
-            self.set_state(self.room_builder_humidity_sensor, state="NONE")
-            self.set_state(self.room_builder_fan, state="NONE")
-            self.set_state(self.room_builder_window_sensors, state="")
-            return
-        
-        # UÄŤitaj podatke odabrane sobe iz room_configs.yaml
-        room_cfg = self.load_yaml_file("room_configs.yaml") or {}
-        room_data = room_cfg.get(room_name, {})
-        
-        try:
-            # Popuni polja sa vrijednostima sobe
-            self.set_state(self.room_builder_name, state=room_name)
-            
-            target = room_data.get("target", "21.0")
-            self.set_state(self.room_builder_target, state=str(target))
-            
-            climate = room_data.get("climate", "NONE")
-            self.set_state(self.room_builder_climate, state=climate if climate else "NONE")
-            
-            temp_sensor = room_data.get("temp_sensor", "NONE")
-            self.set_state(self.room_builder_temp_sensor, state=temp_sensor if temp_sensor else "NONE")
-            
-            humidity_sensor = room_data.get("humidity_sensor", "NONE")
-            self.set_state(self.room_builder_humidity_sensor, state=humidity_sensor if humidity_sensor else "NONE")
-            
-            fan = room_data.get("fan", "NONE")
-            self.set_state(self.room_builder_fan, state=fan if fan else "NONE")
-            
-            windows = room_data.get("window_sensors", [])
-            windows_str = ", ".join(windows) if isinstance(windows, list) else ""
-            self.set_state(self.room_builder_window_sensors, state=windows_str)
-            
-            self.log(f"[CONFIG] UÄŤitani podaci sobe '{room_name}'", level="INFO")
-        except Exception as ex:
-            self.log(f"[CONFIG] GreĹˇka pri uÄŤitavanju podataka sobe: {ex}", level="WARNING")
+        ui_helpers.on_room_selected(self, new)
 
     def should_log(self, level):
         levels = {"DEBUG": 10, "INFO": 20, "WARNING": 30, "ERROR": 40, "CRITICAL": 50}

@@ -3,6 +3,9 @@
   longitude: 15.9819
   elevation: 120
   time_zone: "Europe/Zagreb"
+  exclude_dirs:
+    - config
+    - validator
 
   plugins:
     HASS:

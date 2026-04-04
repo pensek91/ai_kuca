@@ -18,12 +18,22 @@ def push_log_to_ha(app, message, level, sensor_entity, history_seconds, max_item
         max_items (int): Maksimalni broj stavki u povijesti.
     """
     try:
-        #####  OVO ISPOD KOMENTIRATI ZA SVE LOGOVE U HA - U !!!#######
-        # Dozvoljeni leveli logiranja
-        allowed_levels = ["WARNING", "ERROR", "CRITICAL"]
-        if str(level).upper() not in allowed_levels:
-            return  # preskoci log ako nije WARNING ili ERROR
-            ########################################################
+        # Dozvoljeni leveli za HA senzor log.
+        # INFO je selektivan da ne zatrpa history: propušta samo startup poruke.
+        level_upper = str(level).upper()
+        allowed_levels = ["WARNING", "ERROR", "CRITICAL", "INFO"]
+        if level_upper not in allowed_levels:
+            return
+
+        if level_upper == "INFO":
+            startup_info_tokens = [
+                "Startup self-check",
+                "AI predikcija",
+                "pokrenut",
+                "pokrenuta",
+            ]
+            if not any(token in str(message) for token in startup_info_tokens):
+                return
 
         now = time.time()
         now_iso = datetime.fromtimestamp(now, tz=timezone.utc).isoformat()

@@ -8,14 +8,15 @@ spavaca:
   target_step: 1.0
   predictive:
     auto_apply_targets: true
-    deadband: 0.2
-    max_step_per_cycle: 0.5
-    min_temp: 16.0
-    max_temp: 25.0
+    deadband: 0.5
+    max_step_per_cycle: 1.0
+    min_temp: 8.0
+    max_temp: 35.0
     smart_boost_enabled: true
     smart_boost_delta: 2.0
-    smart_boost_max: 25.0
+    smart_boost_max: 35.0
     smart_boost_deadband: 0.5
+  target_input: input_number.ai_kuca_target_spavaca
 dnevna:
   climate: climate.radijator_dnevna
   temp_sensor: sensor.temperatura_dnevna
@@ -36,14 +37,15 @@ dnevna:
   target_step: 0.5
   predictive:
     auto_apply_targets: true
-    deadband: 0.2
+    deadband: 0.5
     max_step_per_cycle: 0.5
-    min_temp: 16.0
-    max_temp: 25.0
+    min_temp: 8.0
+    max_temp: 35.0
     smart_boost_enabled: true
     smart_boost_delta: 2.0
-    smart_boost_max: 25.0
+    smart_boost_max: 35.0
     smart_boost_deadband: 0.5
+  target_input: input_number.ai_kuca_target_dnevna
 kupaona:
   climate: climate.radijator_kupaona
   temp_sensor: sensor.temperatura_kupaona
@@ -62,14 +64,15 @@ kupaona:
   target_step: 1.0
   predictive:
     auto_apply_targets: true
-    deadband: 0.2
-    max_step_per_cycle: 0.5
-    min_temp: 16.0
-    max_temp: 25.0
+    deadband: 0.5
+    max_step_per_cycle: 1.0
+    min_temp: 8.0
+    max_temp: 35.0
     smart_boost_enabled: true
     smart_boost_delta: 2.0
-    smart_boost_max: 25.0
+    smart_boost_max: 35.0
     smart_boost_deadband: 0.5
+  target_input: input_number.ai_kuca_target_kupaona
 tia:
   climate: climate.radijator_tia
   temp_sensor: sensor.temperatura_tia
@@ -80,14 +83,15 @@ tia:
   target_step: 1.0
   predictive:
     auto_apply_targets: true
-    deadband: 0.2
-    max_step_per_cycle: 0.5
-    min_temp: 12.0
-    max_temp: 18.0
+    deadband: 0.5
+    max_step_per_cycle: 1.0
+    min_temp: 8.0
+    max_temp: 35.0
     smart_boost_enabled: true
     smart_boost_delta: 2.0
-    smart_boost_max: 18.0
+    smart_boost_max: 35.0
     smart_boost_deadband: 0.5
+  target_input: input_number.ai_kuca_target_tia
 mali:
   climate: climate.radiator_mali
   temp_sensor: sensor.temperatura_hodnik
@@ -96,15 +100,16 @@ mali:
   target_step: 1.0
   predictive:
     auto_apply_targets: true
-    deadband: 0.2
-    max_step_per_cycle: 0.5
-    min_temp: 16.0
-    max_temp: 25.0
+    deadband: 0.5
+    max_step_per_cycle: 1.0
+    min_temp: 8.0
+    max_temp: 35.0
     smart_boost_enabled: true
     smart_boost_delta: 2.0
-    smart_boost_max: 25.0
+    smart_boost_max: 35.0
     smart_boost_deadband: 0.5
   window_sensors: []
+  target_input: input_number.ai_kuca_target_mali
 spajz:
   climate: climate.radijator_spajz
   temp_sensor: sensor.temperatura_spajz
@@ -115,11 +120,12 @@ spajz:
   target_step: 0.5
   predictive:
     auto_apply_targets: true
-    deadband: 0.2
+    deadband: 0.5
     max_step_per_cycle: 0.5
     min_temp: 8.0
-    max_temp: 13.0
+    max_temp: 35.0
     smart_boost_enabled: true
     smart_boost_delta: 2.0
-    smart_boost_max: 13.0
+    smart_boost_max: 35.0
     smart_boost_deadband: 0.5
+  target_input: input_number.ai_kuca_target_spajz

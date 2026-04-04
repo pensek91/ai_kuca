@@ -48,5 +48,26 @@ ai_kuca_status:
   class: AIKucaStatus
   namespace: default
 
+#ai_universal_logger:
+#  module: ai_universal_logger
+#  class: AIUniversalLogger
 
+#ai_universal_logger_v2:
+#  module: ai_universal_logger_v2
+#  class: AIUniversalLoggerV2
 
+#ai_universal_logger_v3:
+#  module: ai_universal_logger_v3
+#  class: AIUniversalLoggerV3
+
+ai_universal_logger_v4:
+  module: ai_universal_logger_v4
+  class: AIUniversalLoggerV4
+  allowed_user_ids:
+    - "50f9cf453a8f4a8184f85283aed1a9c9"  # Vedran
+    - "d877355c3f564309a5aa0b5f1b5abd54"  # Renata
+    - "c27daf5f220048dca13087884d5ec536"  # HTC - Mob
+    - "76d72028765543c59a34fbe820e7bbba"  # Samsung
+    - "beb8b5bd80fa48188089fbb034230aef"  # Dashboard + Alexa
+  blocked_user_ids:
+    - "f4e0c7de1ea44897acc6ab1999986961"

@@ -1,0 +1,7 @@
+time,schema_version,event_id,session_id,date,week,weekday,hour,part_of_day,is_weekend,user_id,user_name,entity_id,domain,action,old_state,new_state,source,automation_guess,context_id,parent_context_id,snapshot
+2026-04-03 21:22:23.530869+0200,,,,2026-04-03,2026-W14,Friday,21,evening,False,beb8b5bd80fa48188089fbb034230aef,Dashboard + Alexa,switch.svjetlo_kuhinja2,switch,turned_on,off,on,human,False,01KNACQTTW3YSSYM876GK7QAJ7,,
+2026-04-03 21:22:23.536238+0200,,,,2026-04-03,2026-W14,Friday,21,evening,False,beb8b5bd80fa48188089fbb034230aef,Dashboard + Alexa,light.light_1,light,turned_on,off,on,human,False,01KNACQTTW3YSSYM876GK7QAJ7,,
+2026-04-03 21:22:48.184560+0200,,,,2026-04-03,2026-W14,Friday,21,evening,False,beb8b5bd80fa48188089fbb034230aef,Dashboard + Alexa,switch.svjetlo_kuhinja2,switch,turned_off,on,off,human,False,01KNACRJZDMXXVCFNPXP9NP0YA,,
+2026-04-03 21:22:48.190079+0200,,,,2026-04-03,2026-W14,Friday,21,evening,False,beb8b5bd80fa48188089fbb034230aef,Dashboard + Alexa,light.light_1,light,turned_off,on,off,human,False,01KNACRJZDX88DF65NMZEBNZNG,,
+2026-04-04 00:21:01.997354+0200,,,,2026-04-04,2026-W14,Saturday,0,night,True,50f9cf453a8f4a8184f85283aed1a9c9,Vedran,climate.radijator_dnevna,climate,turned_off,heat,off,human,False,01KNAPYWDCXQC4AG39NFZVKT2R,,
+2026-04-04 00:23:22.332126+0200,,,,2026-04-04,2026-W14,Saturday,0,night,True,50f9cf453a8f4a8184f85283aed1a9c9,Vedran,script.rm_reset_ful,script,turned_on,off,on,human,False,01KNAQ374TBFBFCG2C364GXGB7,,

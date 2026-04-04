@@ -1,0 +1,7 @@
+date,user,domain,action,count
+2026-04-03,Dashboard + Alexa,light,turned_off,1
+2026-04-03,Dashboard + Alexa,light,turned_on,1
+2026-04-03,Dashboard + Alexa,switch,turned_off,1
+2026-04-03,Dashboard + Alexa,switch,turned_on,1
+2026-04-04,Vedran,climate,turned_off,1
+2026-04-04,Vedran,script,turned_on,1

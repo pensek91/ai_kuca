@@ -11,12 +11,11 @@
 import os
 from datetime import datetime
 import time
-import yaml
-import appdaemon.plugins.hass.hassapi as hass
+from ai_kuca.core.base_app import BaseApp
 from ai_kuca.core.logger import push_log_to_ha
 
 
-class AIPump(hass.Hass):
+class AIPump(BaseApp):
     """
     Klasa za kontrolu pumpe grijanja.
     
@@ -24,13 +23,24 @@ class AIPump(hass.Hass):
     temperature kotla i vanjske temperature, s histerezom i minimalnim intervalima.
     """
     def initialize(self):
+        self.init_base()
+        system_cfg = self.load_system_config()
+        self.log_level = system_cfg.get("logging_level", "INFO")
+        log_cfg = system_cfg.get("ai_kuca_log", {})
+        log_map = system_cfg.get("ai_kuca_log_sensors", {})
+        self.log_sensor_entity = log_map.get(
+            "pump", log_cfg.get("sensor_entity", "sensor.ai_kuca_log")
+        )
+        self.log_history_seconds = int(log_cfg.get("history_seconds", 120))
+        self.log_max_items = int(log_cfg.get("max_items", 50))
+        self.version = "V2." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
+        self.log_h(f"AI pumpa {self.version} pokrenuta", level="INFO")
         """
         Inicijalizira AIPump skriptu.
         
         UÄŤitava konfiguraciju senzora i postavlja minimalne intervale,
         te pokreÄ‡e petlju kontrole svakih 30 sekundi.
         """
-        self.version = "V2." + datetime.fromtimestamp(os.path.getmtime(__file__)).strftime("%d%m%Y%H%M")
         system_cfg = self.load_system_config()
         heating_cfg = system_cfg.get("heating_main", {})
         pump_cfg = system_cfg.get("pump", {})
@@ -74,11 +84,7 @@ class AIPump(hass.Hass):
         self.main_loop_interval = int(pump_cfg.get("main_loop_interval", 15))
         self.last_pump_change_ts = time.time()
 
-        config_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", "room_configs.yaml")
-        )
-        with open(config_path, "r", encoding="utf-8") as f:
-            self.room_configs = yaml.safe_load(f) or {}
+        self.room_configs = self.load_yaml_file("room_configs.yaml")
 
         self.run_every(self.pump_loop, "now", self.main_loop_interval)
         self.log_h(f"AI pumpa {self.version} pokrenuta | sobe: {len(self.room_configs)}")
@@ -129,7 +135,16 @@ class AIPump(hass.Hass):
         outdoor_temp = self.get_outdoor_temp_avg()
 
         if boiler_temp is None or outdoor_temp is None:
-            return self.system_enabled
+            self.ensure_required_sensors(
+                {
+                    "boiler_sensor": self.boiler_sensor,
+                    "outdoor_sensor": self.outdoor_sensor,
+                },
+                module_name="AIPump",
+                cooldown_sec=900,
+            )
+            self.system_enabled = False
+            return False
 
         if boiler_temp < 35.0 or outdoor_temp > 21.0:
             self.system_enabled = False
@@ -227,19 +242,6 @@ class AIPump(hass.Hass):
             return float(value)
         except Exception:
             return None
-
-    def load_system_config(self):
-        return self.load_yaml_file("system_configs.yaml")
-
-    def load_yaml_file(self, filename):
-        path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "config", filename)
-        )
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return yaml.safe_load(f) or {}
-        except Exception:
-            return {}
 
     def log_h(self, message, level="INFO"):
         push_log_to_ha(self, message, level, self.log_sensor_entity, self.log_history_seconds, self.log_max_items)

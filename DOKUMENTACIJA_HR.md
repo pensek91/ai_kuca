@@ -161,3 +161,66 @@ Napomena:
 
 - "Mogu li koristiti samo dio sustava?"  
   Da, dizajn je modularan; aktiviraš samo module koje želiš.
+
+## 8) Changelog (2026-04-04)
+
+Ova sekcija sažima najvažnije tehničke izmjene napravljene tijekom stabilizacije i pripreme sustava za kasnije AI učenje.
+
+### 8.1 Docker i deploy
+
+- `docker-compose.yaml`:
+1. image pinan na `acockburn/appdaemon:4.4.2` (umjesto `latest`) radi predvidljivog deploya.
+2. uvedeni eksplicitni mountovi za `conf/ai_logs`, `conf/dashboards`, `conf/namespaces`.
+3. smanjen rizik preklapanja volumena i nejasnog runtime ponašanja.
+
+- `editors/fresh_install.py`:
+1. bootstrap compose template usklađen s novim pinned image + mount strategijom.
+
+### 8.2 Sigurnost i .env
+
+- `.env` hardening:
+1. postavljena prava pristupa `600`.
+2. `.env` maknut iz git indexa (`git rm --cached .env`) i više se ne verzionira.
+
+### 8.3 Logger i AI dataset baza
+
+- `apps/ai_universal_logger_v4.py`:
+1. dodan sigurniji bool parsing (`_coerce_bool`) za sve ključne toggle postavke.
+2. uvedena sanitizacija payloada (`_sanitize_payload`) i redakcija osjetljivih ključeva (`REDACT_KEYS`).
+3. poboljšano rukovanje iznimkama i warning/debug logovi bez tihog faila.
+4. dodana AI metadata polja:
+  - `schema_version`
+  - `event_id`
+  - `session_id`
+5. dodan minimalni `snapshot` stanja entiteta po događaju (configurable preko args).
+6. dodan odgođeni outcome zapis za state promjene:
+  - `type=outcome`, `event=state_outcome`
+  - `parent_event_id`
+  - `target_state`
+  - `state_after_delay`
+  - `delay_sec`
+  - `matched_target`
+
+### 8.4 Export pipeline (JSONL -> CSV)
+
+- `conf/ai_logs/export_ai_dataset.py`:
+1. proširen parser/normalizacija da nosi nova AI metadata i outcome polja.
+2. `ai_events.csv` i `trainer_ready.csv` schema prošireni za:
+  - `schema_version`, `event_id`, `session_id`
+  - `parent_event_id`
+  - `snapshot`
+  - `target_state`, `state_after_delay`, `delay_sec`, `matched_target`
+3. dedup logika unaprijeđena: ako postoji `event_id`, koristi se kao primarni dedup ključ.
+
+### 8.5 Validator i UI stabilnost
+
+- `apps/ai_kuca/modules/config/validator.py`:
+1. `validator_dry_run` sada koristi robustan bool parsing.
+2. uveden `validator_ui_refresh_sec` (default 15s, minimum 10s) umjesto fiksnog 5s pollinga.
+3. dodano detaljnije logiranje za debounce cancel i dropdown update greške.
+
+### 8.6 Operativna napomena
+
+- `conf/ai_logs` predstavlja runtime bazu događaja za kasniji AI trening.
+- Dnevni/tjedni CSV eksport je aktivan i potvrđen preko `conf/ai_logs/ai_trainer/export_cron.log`.
+- Outcome zapisi se pojavljuju nakon deploya loggera i isteka konfiguriranog delay intervala.
